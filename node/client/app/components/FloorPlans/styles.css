@@ -1,0 +1,38 @@
+.wrapper {
+  border: 1px solid black;
+}
+
+.title {
+  background: #000000;
+  color: #ffffff;
+}
+
+.floorplans {
+
+}
+
+.floorplans-error {
+
+}
+
+.floorplan-div-container {
+  border-top: 1px solid black;
+  background: #f4f4f4;
+  color: #ffffff;
+}
+
+.floorplan-title {
+  line-height: 10%;
+  background: #fefefe;
+}
+
+.floorplan-title p {
+  color: #808080; /* gray */
+  font-family: "Times New Roman", Times, serif;
+  font-style: italic;
+}
+
+.floorplan-svg {
+  width: 100%;
+  height: calc(100vh - 145px);
+}

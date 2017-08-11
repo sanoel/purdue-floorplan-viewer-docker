@@ -1,0 +1,45 @@
+version: '3'
+
+services:
+  # admin container has all the service names and volumes mapped, so you
+  # can interact with them easily from this service.
+  admin:
+    build: ./admin
+    volumes:
+      - arangodb_data:/volumes/arangodb
+      - arangodb_apps_data:/volumes/arangodb_apps
+      - .:/code
+    command: bash
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DEBUG=${DEBUG:-""}
+
+  # Arango is the main backend where core data and graph is stored
+  arangodb:
+    image: arangodb
+    container_name: arangodb
+    restart: always
+    volumes:
+      - arangodb_data:/var/lib/arangodb3
+      - arangodb_data:/var/lib/arangodb3-apps
+    ports:
+      - "8529:8529"
+    environment:
+      # - ARANGO_RANDOM_ROOT_PASSWORD=1
+      - ARANGO_NO_AUTH=1
+
+  node:
+    build: ./node
+    volumes:
+      - .:/code
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DEBUG=${DEBUG:-""}
+    ports:
+      - "80:80"
+    #  - "443:443"
+    
+
+volumes:
+  arangodb_data:
+  arangodb_apps_data:

@@ -1,0 +1,7 @@
+public/
+build/
+img/
+node_modules/
+resources/
+*.swp
+*.DS_Store

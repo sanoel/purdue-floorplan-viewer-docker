@@ -1,0 +1,10 @@
+.loading-indicator{
+  position: fixed;
+  left:50%;
+}
+@media (min-width: 48em) {
+  .loading-indicator{
+    top:100px;
+    left:62.5%;
+  }
+}

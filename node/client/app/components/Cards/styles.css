@@ -1,0 +1,46 @@
+.wrapper {
+  border: 1px solid black;
+}
+
+.title {
+  background: #000000;
+  color: #ffffff;
+}
+
+.cards {
+  padding:5px;
+  background-color: #f4f4f4;
+}
+
+.card {
+  padding:10px;
+}
+
+.card:hover {
+  background-color: #b0b0b0;
+}
+
+.card-ele {
+}
+
+.gridtile {
+  padding:3px;
+  cursor: pointer;
+}
+.gridtile:hover {
+  background-color: #dddddd;
+}
+.cards-title {
+  line-height: 10%;
+  background: #fefefe;
+}
+
+.cards-title p {
+  color: #808080; /* gray */
+  font-family: "Times New Roman", Times, serif;
+  font-style: italic;
+}
+
+.card-svg {
+  height: 160px;
+}

@@ -1,0 +1,46 @@
+.wrapper {
+  height:100vh - 90px - 20px;
+}
+
+.list {
+  margin-left:3%;
+  margin-right:3%;
+  margin-bottom:5px;
+  border-top: solid 2px rgba(255, 255, 255, 0.5);
+  border-bottom: solid 1px rgba(255, 255, 255, 0.5);
+}
+
+.list a {
+  border-bottom: solid 1px rgba(255, 255, 255, 0.5);
+}
+
+.item {
+  cursor: pointer;
+
+  -webkit-transition: background 0.5s; /* Safari */
+  transition: background 0.5s;
+}
+.item:hover {
+  background: #d9a74a;
+}
+
+.item-selected {
+  background: #bf8f35;
+}
+
+.query {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  color:#ffffff;
+
+  text-decoration: none;
+  text-overflow: ellipsis;
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.info {
+  margin-top: 5px;
+  margin-bottom: 3px;
+  color:#eeeeee;
+}

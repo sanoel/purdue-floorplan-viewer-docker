@@ -1,0 +1,39 @@
+.loginForm {
+  flex: 1;
+  order: 2;
+}
+
+.title {
+  padding: 10px;
+  text-align: center;
+  padding-right: 90px;
+}
+
+.content {
+  width: 400px;
+  height: auto;
+  margin: 0 auto;
+  padding: 10px;
+  position: relative;
+}
+
+.purdue-button {
+  -webkit-transition: background 0.5s; /* Safari */
+  transition: background 0.5s;
+}
+
+.purdue-button:hover {
+  background: #d9a74a;
+}
+
+.purdue-button:active {
+  background: #bf8f35;
+}
+
+.login-error {
+}
+
+.login-error p{
+  text-align:center;
+  vertical-align: middle;
+}

@@ -1,0 +1,135 @@
+.roominfo {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid black;
+}
+.title {
+  background: #000000;
+  color: #ffffff;
+}
+.table-container {
+  display: flex;
+  flex-direction: column;
+  margin: 15px;
+}
+.table-title {
+  display: flex;
+  justify-content: center;
+  background-color: #bf8f35;
+  font-size: 20px; 
+  padding: 5px;
+}
+.room-info-table {
+
+}
+.room-info-title {
+  line-height: 10%;
+  background: #fefefe;
+}
+
+.room-info-title p {
+  color: #808080; /* gray */
+  font-family: "Times New Roman", Times, serif;
+  font-style: italic;
+}
+.room-info {
+  display: flex;
+  flex-direction: column;
+  background-color: #f4f4f4;
+  align-items: flex-start;
+}
+.room-info-tables {
+  padding:10px;
+}
+.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.even-row {
+  background-color: #ffffff;
+}
+.info-table {
+  margin-bottom: 10px;
+}
+.td-link {
+  text-decoration: underline;
+  color: #0000EE;
+  cursor: pointer;
+}
+
+.room-info-tables hr{
+  margin-top:15px;
+  margin-bottom:15px;
+}
+
+.room-info-error {
+
+}
+.wide-table {
+  overflow-x: auto;
+}
+.add-new-person-div {
+  padding: 10px;
+  overflow:hidden;
+}
+.add-new-person-button {
+  float: right;
+}
+.done-cancel-buttons {
+  position: absolute;
+  right: 1px
+}
+.edit-button {
+  position: absolute;
+  right: 1px
+}
+.done-button {
+  order: 2;
+}
+.cancel-button {
+  order: 1;
+}
+.export-room-data-div,.import-room-data-div,.import-room-data-dropzone-div  {
+  margin: 10px;
+  overflow:hidden;
+}
+.export-room-data-button,.import-room-data-button, .cancel-import-room-data-button {
+  float: right;
+}
+.import-room-data-dropzone {
+  margin-left:5%;
+  margin-right:5%;
+  width:90%;
+  height: 200px;
+  border: 2px dashed rgb(102, 102, 102);
+  border-radius: 5px;
+  align-content: center;
+  position: relative;
+}
+.import-room-data-dropzone div{
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  color:grey;
+  text-align: center;
+}
+.shares-table {
+  overflow: scroll;
+}
+.loading-indicator{
+  position: fixed;
+  left:50%;
+  top:50%;
+}
+.display-none {
+  display:none;
+}
+@media (min-width: 48em) {
+  .loading-indicator{
+    top:200px;
+    left:62.5%;
+  }
+}

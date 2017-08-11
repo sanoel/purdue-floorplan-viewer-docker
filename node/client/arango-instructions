@@ -1,0 +1,35 @@
+#https://hub.docker.com/r/arangodb/arangodb/
+
+# 1. start up the ArangoDb container instance with random root password.
+docker run -e ARANGO_RANDOM_ROOT_PASSWORD=1 -d --name arangodb-instance -d arangodb/arangodb
+# 1a. To expose it to the outside world, run
+docker run -e ARANGO_NO_AUTH=1 -p 8529:8529 -d --name arangodb-floorplan -d arangodb/arangodb 
+
+# 2. log the details of a docker running in the background (password, etc)
+docker logs <containerid returned from a background docker run command>
+
+# 3. get the ip of the docker instance started in step 1.
+docker inspect --format '{{ .NetworkSettings.IPAddress }}' <containerId>
+
+# link to app my-app. The arangodb-instance:db-link links the ArangoDB container to the application container
+# and sets the environment variable DB_LINK_PORT_8529_TCP. 
+docker run -e ARANGO_NO_AUTH=1 --name floorplan-viewer --link arangodb-floorplan:db-link arangodb/arangodb
+
+# remove all stopped docker containers
+docker rm $(docker ps --filter "status=exited" -q)
+
+# arangosh into the arangodb container (I think)
+arangosh --server.endpoint 'tcp://0.0.0.0:8529'
+
+
+
+
+
+# To restart arango docker after e.g., restarting computer
+# 1. List all stopped docker containers
+docker ps --filter "status=exited"
+# 2. Start the "arangodb-instance" container back up first.
+docker start <container id>
+# 3. Start the "my-app" container linked to arangodb-instance next
+docker start <container id>
+# 4. (Not sure if this is necessary) Go to localhost:8529 and reload all of the collections by clicking on them in to GUI
