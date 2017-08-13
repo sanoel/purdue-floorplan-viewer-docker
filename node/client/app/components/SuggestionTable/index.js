@@ -19,7 +19,7 @@ export default connect({
       // Generate the "more results" card if necessary.
       let numSuggestions = Object.keys(this.props.searchResults).length
       let moreResultsCard = numSuggestions>MAX_NUM_SUGGESTIONS ? (
-        <li className={cx('pure-menu-list')}
+        <li key='more-card' className={cx('pure-menu-list')}
           onClick={()=>{this.props.moreResultsClicked({type:'cards'})}}>
             <a className={cx('pure-menu-link', 'item', {'item-selected': this.props.idx_selected_suggestion===-1})}>
               <h3 className={cx('query')}>
@@ -31,7 +31,7 @@ export default connect({
       ) : null
 
       var resultsCards = this.props.searchResults.slice(0, MAX_NUM_SUGGESTIONS).map((result, idx) => {
-        return <SuggestionCard idx={idx} key={result._key}/>
+        return <SuggestionCard idx={idx} key={'suggestion-card-'+idx}/>
       })
 
       return (

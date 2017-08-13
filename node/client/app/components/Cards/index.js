@@ -5,7 +5,7 @@ import React from 'react'
 import {connect} from 'cerebral-view-react'
 import {GridList, GridTile} from 'material-ui/GridList'
 import {Card, CardActions, CardHeader, CardMedia, CardTitle, CardText} from 'material-ui/Card'
-import FlatButton from 'material-ui/FlatButton'
+import { FontIcon, FlatButton } from 'material-ui'
 import styles from './styles.css'
 import ResultCard from './ResultCard'
 import _ from 'lodash'
@@ -85,7 +85,7 @@ export default connect({
               src={'/img/svgFloorPlans/svgFloorPlansSim/svgoManSvgo/'+card.filename} />
           )
         } else {
-          cardPreview = icon
+          cardPreview = (<FontIcon className="material-icons">{icon}</FontIcon>)
         }
         cardTitle = card.name;
         cardSubTitle = card._type;
