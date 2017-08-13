@@ -13,6 +13,7 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DEBUG=${DEBUG:-""}
+      - ARANGO_SERVER=http://arangodb:8529
 
   # Arango is the main backend where core data and graph is stored
   arangodb:
@@ -23,10 +24,11 @@ services:
       - arangodb_data:/var/lib/arangodb3
       - arangodb_data:/var/lib/arangodb3-apps
     ports:
-      - "8529:8529"
+      - "8529"
     environment:
       # - ARANGO_RANDOM_ROOT_PASSWORD=1
       - ARANGO_NO_AUTH=1
+      - ARANGO_SERVER=http://arangodb:8529
 
   node:
     build: ./node
@@ -35,6 +37,7 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DEBUG=${DEBUG:-""}
+      - ARANGO_SERVER=http://arangodb:8529
     ports:
       - "80:80"
     #  - "443:443"

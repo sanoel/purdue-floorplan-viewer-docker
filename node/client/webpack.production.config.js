@@ -34,6 +34,9 @@ module.exports = validate({
       loader: "style-loader!css-loader?modules"
     }]
   },
+  node: {
+    fs: 'empty',
+  },
   plugins: [
     new CopyWebpackPlugin(
       // Patterns.
