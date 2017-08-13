@@ -28,7 +28,7 @@ export default connect(props => ({
   stationsChanged: 'roominfo.stationsChanged',
   noteChanged: 'roominfo.noteChanged',
   addShareButtonClicked: 'roominfo.addShareButtonClicked',
-  removeShareButtonClicked: 'roominfo.removeShareButtonClicked',
+  deleteShareButtonClicked: 'roominfo.deleteShareButtonClicked',
   roomOptionChanged: 'roominfo.roomOptionChanged',
   cancelDialogClicked: 'roominfo.cancelDialogClicked',
   submitDialogClicked: 'roominfo.submitDialogClicked',
@@ -52,19 +52,29 @@ class ShareDialog extends React.Component {
       <FlatButton
         label="Cancel"
         primary={true}
-        onTouchTap={()=>{this.props.cancelDialogClicked({key:this.props.key})}}
+        onTouchTap={()=>{this.props.cancelDialogClicked({share:this.props.share})}}
       />,
       <FlatButton
         label="Submit"
         primary={true}
         keyboardFocused={true}
-        onTouchTap={()=>{this.props.submitDialogClicked({})}}
+        onTouchTap={()=>{this.props.submitDialogClicked({share:this.props.share})}}
       />
     ];
 
     return (
       <Dialog
-        title="Edit a room share"
+        title={<div className={styles['title-container']}>
+          <p className={styles.title}>Edit a room share</p>
+          <div
+            onTouchTap={()=>{this.props.deleteShareButtonClicked({ share: this.props.share })}}
+            className={styles.delete}>
+            <IconButton                                                                                
+              iconClassName="material-icons">delete
+            </IconButton>
+            <p>Delete Share</p>
+          </div>
+        </div>}
         actions={actions}
         modal={false}
         open={this.props.open}
@@ -134,7 +144,7 @@ class ShareDialog extends React.Component {
           />
           <IconButton                                                                                
             onTouchTap={()=>{this.props.addPersonButtonClicked({ share: this.props.share, text: this.props.newPersonText, match: this.props.match })}}
-            disabled={this.props.newPersonText.length > 0 ? false : true}
+            disabled={/*this.props.newPersonText.length > 0 ? false : true*/ this.props.match._key ? false : true}
             iconClassName="material-icons">add_circle
           </IconButton>
 

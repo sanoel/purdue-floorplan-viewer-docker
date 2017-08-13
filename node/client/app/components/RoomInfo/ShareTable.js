@@ -44,12 +44,6 @@ export default connect({
 },
   class SharesTable extends React.Component {
 
-    handleRequestClose() {
-      this.setState({
-        open: false,
-      });
-    };
-
     render() {
       let departmentMenuItems =this.props.departments.map((dept, i) => (
         <MenuItem key={'department-item-'+i} value={i} primaryText={dept} />
@@ -98,7 +92,7 @@ export default connect({
               <TableRowColumn style={cellStyle}>{this.props.shares[key].stations}</TableRowColumn>
               <TableRowColumn style={cellStyle}>{Object.keys(this.props.shares[key].persons).map((person, p) => (
                 <Chip
-                  onTouchTap={()=>{this.props.personClicked({person:this.props.shares[key].persons[p]})}}
+                  onTouchTap={()=>{this.props.personClicked({person:this.props.shares[key].persons[person].name})}}
                   key={'person_chip_'+p}>
                   {this.props.shares[key].persons[person].name}
                 </Chip> ))}

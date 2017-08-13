@@ -22,6 +22,10 @@ import {
   addPerson, 
   setPersonMatch,
   updateNewPersonText,
+  openAttributeDialog,
+  cancelAttributeDialog,
+  submitAttributeDialog,
+  toggleRoomAttribute,
 } from './chains'
 import room_types from './room-types.js'
 
@@ -48,6 +52,11 @@ export default module => {
       },
     },
 
+    attribute_dialog: { 
+      open: false,
+      attributes: {},
+    },
+
   })
 
   module.addSignals({
@@ -59,10 +68,12 @@ export default module => {
       immediate: true
     },
 
-    roomOptionPopoverChanged: setNotePopover,
-    roomOptionChanged: setRoomOption,
+    attributeEditButtonClicked: openAttributeDialog,
+    attributeDialogCancelled: cancelAttributeDialog,
+    attributeDialogSubmitted: submitAttributeDialog,
+    attributeChanged: toggleRoomAttribute,
     addShareButtonClicked: addShare,
-    removeShareButtonClicked: removeShare,
+    deleteShareButtonClicked: removeShare,
     cancelDialogClicked: cancelDialog,
     submitDialogClicked: submitDialog,
     editButtonClicked: [...toggleEditMode, ...startEditingRoom],

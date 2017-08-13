@@ -8,6 +8,8 @@ export default [
   getRoom, {
     success: [
       copy('input:room', 'state:roominfo.room'), 
+//TODO: don't overwrite stuff from database
+      setRoomAttributes,
       getSharesFromRoom, {
         success: [
           getPersonsFromShares, {
@@ -24,24 +26,25 @@ export default [
 ]
 
 export function getRoom({input, state, services, output}) {
-  services.http.get('/nodes?type=room&name='+input.room).then((results) => {
-    if (results.result.length === 1) output.success({room:results.result[0]})
+  return services.http.get('/nodes?type=room&name='+input.room).then((results) => {
+    if (results.result.length === 1) return output.success({room:results.result[0]})
     console.log('either multiple or zero rooms found')
-    output.error({message: 'either multiple or zero rooms found'})
+    console.log(results.result)
+    return output.error({message: 'either multiple or zero rooms found'})
   }).catch((err) => {
     console.log(err)
-    output.error({message:err})
+    return output.error({message:err})
   })
 }
 getRoom.outputs=['success', 'error']
 getRoom.async = true;
 
 export function getSharesFromRoom({input, services, output}) {
-  services.http.get('/edges?type=share&from='+input.room._key).then((results) => {
-    output.success({shares: results.result})
+  return services.http.get('/edges?type=share&from='+input.room._id).then((results) => {
+    return output.success({shares: results.result})
   }).catch((err) => {
     console.log(err)
-    output.error({message:err})
+    return output.error({message:err})
   })
 }
 getSharesFromRoom.outputs=['success', 'error']
@@ -50,7 +53,7 @@ getSharesFromRoom.async = true;
 export function getPersonsFromShares({input, services, output}) {
   let shares = {}
   return Promise.each(input.shares, (share, i) => {
-    return services.http.get('/edges?type=person&from='+share._key).then((results) => {
+    return services.http.get('/edges?type=person&from='+share._id).then((results) => {
       shares[share._key] = share
       shares[share._key].persons = {}
       return Promise.each(results.result, (person, j) => {
@@ -59,11 +62,15 @@ export function getPersonsFromShares({input, services, output}) {
       })
     }).catch((err) => {
       console.log(err)
-      output.error({message:err})
+      return output.error({message:err})
     })
   }).then(() => {
-    output.success({shares})
+    return output.success({shares})
   })
 }
 getPersonsFromShares.outputs=['success', 'error']
 getPersonsFromShares.async = true;
+
+export function setRoomAttributes({input, state}) {
+  state.set('roominfo.room.attributes', input.room.attributes || {})
+}

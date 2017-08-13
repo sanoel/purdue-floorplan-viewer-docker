@@ -89,6 +89,9 @@ function getSmasRoomsShares(data) {
     rooms[name].area = (parseInt(rooms[name].area) + parseInt(row['Area'])).toString()
     let share = name + '-'+row['Share Number']
     shares[share] = {
+      building: rooms[name].building,
+      floor: rooms[name].floor,
+      room: name,
       name: share,
       assigned: row['Department Assigned'],
       using: row['Department Using'],

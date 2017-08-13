@@ -11,7 +11,7 @@ import {connect} from 'cerebral-view-react'
 import stylesLogin from '../Login/styles.css'
 import styles from './styles.css'
 import classNames from 'classnames/bind'
-import RoomTable from './AssignedRoomTable'
+import ShareTable from './ShareTable'
 import PersonTable from '../PersonTable'
 import {Table, TableBody, TableFooter, TableHeader, TableHeaderColumn, TableRow, TableRowColumn} from 'material-ui/Table'
 import { Paper, TextField, FontIcon, RaisedButton, DropDownMenu, MenuItem } from 'material-ui'
@@ -20,7 +20,7 @@ let cx = classNames.bind(styles)
 export default connect({
   editing: 'personinfo.editing',
   person: 'personinfo.person',
-  rooms: 'personinfo.rooms',
+  shares: 'personinfo.shares',
   departments: 'personinfo.departments',
   statuses: 'personinfo.statuses',
   person_edits: 'personinfo.person_edits'
@@ -43,7 +43,7 @@ export default connect({
         <div className = {styles.personinfo}>
           <div className={styles.title}>Person Information</div>
           <div className={cx('person-info')}>
-            {this.props.editing ? <RaisedButton
+            {/*this.props.editing ? <RaisedButton
               className={styles['edit-button']}
               label="Done"
               labelPosition="before"
@@ -55,7 +55,7 @@ export default connect({
               labelPosition="before"
               onTouchTap={()=>{this.props.editButtonClicked({})}}
               icon={<FontIcon className="material-icons">edit</FontIcon>}
-            />}
+            />*/}
             <Paper className={styles['table-container']}>
               <span className={styles['table-title']}>
                 Person Information
@@ -107,11 +107,9 @@ export default connect({
                 </TableBody>
               </Table>
             </Paper>
-            {(this.props.editing || this.props.rooms.length > 0) ? 
-            <RoomTable 
+            {(this.props.editing || this.props.shares.length > 0) ? 
+            <ShareTable 
               className={styles['person-room-table']}
-              rooms={this.props.rooms} 
-              person={this.props.person}
             /> : null }
           </div>
         </div>

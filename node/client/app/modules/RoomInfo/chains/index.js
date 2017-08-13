@@ -1,6 +1,29 @@
 import {copy, set, unset, toggle, when } from 'cerebral/operators'
 import Promise from 'bluebird'
 
+export var cancelAttributeDialog = [
+  copy('state:roominfo.room.attributes', 'state:roominfo.attribute_dialog.attributes'), 
+  toggle('state:roominfo.attribute_dialog.open'),
+]
+
+export var submitAttributeDialog = [
+  copy('state:roominfo.attribute_dialog.attributes', 'state:roominfo.room.attributes'),
+  toggle('state:roominfo.attribute_dialog.open'),
+  putRoomAttributes, {
+    success: [],
+    error: [],
+  },
+]
+
+export var toggleRoomAttribute = [
+  setRoomAttribute,
+]
+
+export var openAttributeDialog = [
+  toggle('state:roominfo.attribute_dialog.open'),
+  setRoomAttributes,
+]
+
 export var removePerson = [
   unsetPerson,
   resetTable,
@@ -59,6 +82,7 @@ export var setDepartmentAssigned = [
 ]
 
 export var removeShare = [
+  set('state:roominfo.share_dialog.open', false),
   deleteShare, {
     success: [
       unsetShare,
@@ -75,10 +99,11 @@ export var editShare = [
 export var addShare = [
   addTempShare, {
     success: [
-      setTempShare,
       set('state:roominfo.share_dialog.open', true),
       set('state:roominfo.share_dialog.new_share', true),
       copy('input:share', 'state:roominfo.share_dialog.share'),
+      set('state:roominfo.share_dialog.share.persons', {}),
+      copyShareToRoom,
     ],
     error: [],
   }
@@ -104,11 +129,13 @@ export var cancelDialog = [
 
 export var submitDialog = [
   set('state:roominfo.share_dialog.open', false),
-  copyShareToRoom,
-  addPersonsToShare, {
-    success: [],
+  set('state:roominfo.share_dialog.new_person', { text: '', matches: [], selected_match: {} }),
+  updateShare, {
+    success: [
+      copyShareToRoom,
+    ],
     error: [],
-  }
+  },
 ]
 
 export var startEditingRoom = [
@@ -123,7 +150,7 @@ export var doneEditingRoom = [
   updateRoom, {
     success: [],
     error: [],
-  }
+  },
 ]
 
 export var cancelEditingRoom = [
@@ -147,8 +174,6 @@ export var setNotePopover = [
   setShareNotePopover
 ]
 
-
-
 function setTempShare({input, state}) {
   state.set(`roominfo.share_dialog.share`, input.share)
   state.set(`roominfo.share_dialog.share.persons`, {})
@@ -170,9 +195,7 @@ function setShareRoomOption({input, state}) {
 
 function copyShareToRoom({input, state}) {
   let shareKey = state.get('roominfo.share_dialog.share._key');
-  console.log(shareKey)
   let editShare = state.get(`roominfo.share_dialog.share`)
-  console.log(editShare)
   state.set(`roominfo.room.shares.${shareKey}`, editShare);
 }
 
@@ -185,7 +208,6 @@ function deleteShare({input, state, services, output}) {
       return Promise.each(Object.keys(input.share.persons), (key, i) => {
         let person = input.share.persons[key];
         return services.http.delete('/edges?to='+person._id+'&from='+input.share._id)
-        
       }).then(() => {
         return output.success()
       })
@@ -201,49 +223,49 @@ function deleteShare({input, state, services, output}) {
 deleteShare.async = true;
 deleteShare.outputs = ['success', 'error']
 
-function addPersonsToShare({input, state, services, output}) {
-  let editShare = state.get(`roominfo.share_dialog.share`)
+function updateShare({input, state, services, output}) {
+  let editShare = state.get('roominfo.share_dialog.share');
   let share = state.get(`roominfo.room.shares.${editShare._key}`)
-  let newShare = state.get(`roominfo.share_dialog.new_share`)
-  if (newShare) {
-    console.log('new share')
+  let example = _.cloneDeep(editShare)
+  delete example.persons
+  delete example._rev
+  delete example._id
+  delete example._key
+  console.log('PUTTING ROOM UPDATES')
+  return services.http.put('/nodes?id='+editShare._id, example).then((res) => {
+// Add persons that are new 
     return Promise.each(Object.keys(editShare.persons), (key) => { 
-      return services.http.put('/edges?to='+editShare.persons[key]._id+'&from='+editShare._id).then((result) => {
-        return true;
-      }).catch((err) => {
-        console.log(err)
-        output.error({error:err})
-      })
-    }).then((res) => { return output.success({})})
-  } else {
-    console.log('editing share')
-    return Promise.each(Object.keys(editShare.persons), (key) => { 
-      console.log('editing - adding persons')
+      console.log(key, share.persons[key])
+      console.log(!share.persons[key])
       if (!share.persons[key]) {
-        return services.http.put('/edges?to='+key+'&from='+shareKey).then((result) => {
-          return true;
-        }).catch((err) => {
+        console.log('POSTING NEW PERSON EDGES')
+        return services.http.post('/edges?to=nodes/'+key+'&from='+editShare._id+'&type=share-person')
+        .catch((err) => {
           console.log(err)
-          output.error({error:err})
+          return output.error({error:err})
         })
       } else return false
     }).then((res) => {
+// Delete persons that are no longer listed 
+      console.log('DELETING PERSONS')
       return Promise.each(Object.keys(share.persons), (key) => { 
-        console.log('editing - deleting persons')
         if (!editShare.persons[key]) {
-          return services.http.delete('/edges?to='+key+'&from='+editShare._key).then((result) => {
-            return true;
-          }).catch((err) => {
+          console.log('POSTING REMOVING DELETED EDGES')
+          return services.http.delete('/edges?to='+key+'&from='+editShare._key)
+          .catch((err) => {
             console.log(err)
-            output.error({error:err})
+            return output.error({error:err})
           })
         } else return false
       })
-    }).then((res) => { return output.success({}) })
-  }
+    })
+  }).then((res) => { 
+    console.log('RETURNING OUTPUT')
+    return output.success({})
+  })
 }
-addPersonsToShare.async = true;
-addPersonsToShare.outputs = ['success', 'error']
+updateShare.async = true;
+updateShare.outputs = ['success', 'error']
 
 function revertShare({input, state}) {
   let shareKey = state.get('roominfo.share_dialog.share._key') 
@@ -255,12 +277,12 @@ function revertShare({input, state}) {
 
 function unsetShare({input, state}) {
   state.set(`roominfo.share_dialog.share`, {})
-  state.unset(`roominfo.room.shares.${input.index}`)
+  state.unset(`roominfo.room.shares.${input.share._key}`)
 }
 
 function addTempShare({input, state, services, output}) {
   let shares = state.get('roominfo.room.shares')
-  let id = state.get('roominfo.room._id')
+  let room = state.get('roominfo.room')
   let share = {
     percent: '',
     type: '',
@@ -270,13 +292,14 @@ function addTempShare({input, state, services, output}) {
     stations: '',
     description: '',
     note: '',
+    building: room.building,
+    floor: room.floor,
+    room: room.name,
     _type: 'share'
   }
   return services.http.post('/nodes', share).then((res) => {
-    console.log(res.result)
-    return services.http.put('/edges?to='+res.result._id+'&from='+id).then((results) => {
+    return services.http.post('/edges?to='+res.result._id+'&from='+room._id+'&type=room-share').then((results) => {
       Object.assign(share, res.result)
-      console.log(share)
       return output.success({share})
     }).catch((error) =>{
       console.log(error);
@@ -376,7 +399,7 @@ getPersonFromText.outputs = ['success', 'error'];
 function createPersonEdge({input, state, output, services}) {
   let to = input.match._id;
   let from = input.share._id;
-  return services.http.put('/edges?to='+to+'&from='+from+'&type=share-person').then((results) => {
+  return services.http.post('/edges?to='+to+'&from='+from+'&type=share-person').then((results) => {
     return output.success()
   }).catch((error) => {
     console.log(error);
@@ -440,3 +463,35 @@ function putNewPerson({input, state, output, services}) {
 }
 putNewPerson.async = true;
 putNewPerson.outputs = ['success', 'error'];
+
+////////////////// Attribute Dialog //////////////////////////
+
+function setRoomAttribute({input, state}) {
+  let checked = state.get('roominfo.attribute_dialog.attributes.'+input.attribute)
+  if (checked) {
+    state.set('roominfo.attribute_dialog.attributes.'+input.attribute, false)
+  } else {
+    state.set('roominfo.attribute_dialog.attributes.'+input.attribute, true)
+  }
+}
+
+function setRoomAttributes({input, state}) {
+  let roomAttributes = ['208 V', '220 V', '480 V', 'Single Phase', 'Three Phase']
+  let attributes = state.get('roominfo.room.attributes')
+  roomAttributes.forEach((attribute) => {
+    if (attributes[attribute]) {
+      state.set('roominfo.attribute_dialog.attributes.'+attribute, attributes[attribute])
+    } else {
+      state.set('roominfo.attribute_dialog.attributes.'+attribute, false)
+    }
+  })
+}
+
+function putRoomAttributes({input, state, services, output}) {
+  let room = state.get('roominfo.room')
+  return services.http.put('/nodes?id='+room._id, {attributes: room.attributes}).then((results) => {
+    return output.success({})
+  })
+}
+putRoomAttributes.async = true
+putRoomAttributes.outputs = ['success', 'error']

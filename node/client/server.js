@@ -37,11 +37,9 @@ app.get('/edges/', (req, res) => {
   let bnd, key;
   let type = req.query.type
   if (req.query.from)  { 
-    key = 'nodes/'+req.query.from
-    console.log(key, type)
     db.query(aql`
       FOR v, e, p IN 0..1 
-        OUTBOUND ${key}
+        OUTBOUND ${req.query.from}
         edges
         FILTER v._type == ${type}
       RETURN v`
@@ -53,15 +51,13 @@ app.get('/edges/', (req, res) => {
     })
   }
   if (req.query.to) {
-    key = 'nodes/'+req.query.to
     db.query(aql`
       FOR v, e, p IN 0..1 
-        INBOUND ${key}
+        INBOUND ${req.query.to}
         edges
         FILTER v._type == ${type}
       RETURN v`
     ).then(function(cursor) {
-      console.log(cursor._result)
       res.json(cursor._result)
     }).catch((err) => {
       console.log(err);
@@ -97,9 +93,10 @@ app.delete('/edges', (req, res) => {
   let example = {}
   if (req.query.to) example._to = req.query.to
   if (req.query.from) example._from = req.query.from
-  collection.removeByExample(example).then((cursor) => {
-    console.log(result)
-    res.json(cursor._result)
+  if (req.query.type) example.type = req.query.type
+  collection.removeByExample(example).then((result) => {
+    console.log('DELETED: something of type ,', example.type, result._result)
+    res.json(result)
   }).catch((err) => {
     console.log(err);
     res.json(err);
@@ -114,7 +111,7 @@ app.delete('/nodes', (req, res) => {
   if (req.query.id) example._id = req.query.id
   if (req.query.key) example._key = req.query._key
   collection.removeByExample(example).then((result)=>{
-    console.log(result)
+    console.log('DELETED:', result)
     res.json(result)
   }).catch((err)=>{
     console.log(err)
@@ -139,7 +136,7 @@ app.put('/nodes', (req, res) => {
   let collection = db.collection('nodes')
   req.pipe(concat(function(body) {
     var body = JSON.parse(body)
-    collection.updateByExample(body.share, body.newValue).then((result)=>{
+    collection.updateByExample({_id: req.query.id}, body).then((result)=>{
       res.json(result)
     }).catch((err)=>{
       console.log(err)
@@ -148,8 +145,8 @@ app.put('/nodes', (req, res) => {
   }))
 })
 
-app.put('/edges', (req, res) => {
-  let collection = db.collection('nodes')
+app.post('/edges', (req, res) => {
+  let collection = db.collection('edges')
   collection.save({_to:req.query.to, _from: req.query.from, type:req.query.type}).then((result) => {
     res.json(result)
   }).catch((err)=>{
@@ -172,7 +169,7 @@ app.get('/collectionById/:collection/:key', (req, res) => {
 
 ///////////////////////////////////////////////////////
 //////////////////////////////////////////////////////
-
+/*
 
 app.get('/personsFromPerson/:key', function(req, res) {
   var key = 'person/' + req.params['key'];
@@ -338,6 +335,7 @@ app.get('/searchRooms/:key', function(req, res) {
     res.json(err);
   })
 })
+*/
 
 var server = app.listen(thePort, function () {
   var host = server.address().address

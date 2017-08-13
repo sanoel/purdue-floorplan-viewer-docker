@@ -1,0 +1,19 @@
+{
+  "name": "purdue-floorplan-viewer-docker",
+  "version": "1.0.0",
+  "description": "Install directions ==================",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sanoel/purdue-floorplan-viewer-docker.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sanoel/purdue-floorplan-viewer-docker/issues"
+  },
+  "homepage": "https://github.com/sanoel/purdue-floorplan-viewer-docker#readme"
+}

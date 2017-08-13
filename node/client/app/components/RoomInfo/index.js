@@ -8,13 +8,15 @@ import React from 'react'
 import {connect} from 'cerebral-view-react'
 import {Circle} from 'better-react-spinkit'
 import Dropzone from 'react-dropzone';
+import moment from 'moment'
 import stylesLogin from '../Login/styles.css'
 import AssignedPersonTable from './AssignedPersonTable'
 import SharesTable from './ShareTable'
+import AttributeDialog from './AttributeDialog'
 import styles from './styles.css'
 import classNames from 'classnames/bind'
 import {Table, TableBody, TableFooter, TableHeader, TableHeaderColumn, TableRow, TableRowColumn} from 'material-ui/Table'
-import { Paper, TextField, FontIcon, Divider, RaisedButton, DropDownMenu, MenuItem } from 'material-ui'
+import { Chip, IconButton, Paper, TextField, FontIcon, Divider, RaisedButton, DropDownMenu, MenuItem } from 'material-ui'
 let cx = classNames.bind(styles)
 
 let cellStyle = {
@@ -23,6 +25,7 @@ let cellStyle = {
 }
 
 export default connect({
+  attributeDialog: 'roominfo.attribute_dialog.open',
   room: 'roominfo.room',
   roomTypes: 'roominfo.room_types',
   saving_rooms: 'app.saving_rooms',
@@ -35,6 +38,7 @@ export default connect({
   cancelButtonClicked: 'roominfo.cancelButtonClicked',
   buildingPageRequested: 'viewer.buildingPageRequested',
   floorplanPageRequested: 'viewer.floorplanPageRequested',
+  attributeEditButtonClicked: 'roominfo.attributeEditButtonClicked',
 },
   class RoomInfo extends React.Component {
 
@@ -87,6 +91,7 @@ export default connect({
                     <TableHeaderColumn style={cellStyle}>Floor</TableHeaderColumn>
                     <TableHeaderColumn style={cellStyle}>Room</TableHeaderColumn>
                     <TableHeaderColumn style={cellStyle}>Total Area (ft<sup>2</sup>)</TableHeaderColumn>
+                    <TableHeaderColumn style={cellStyle}>Attributes</TableHeaderColumn>
                   </TableRow>
                 </TableHeader>
                 <TableBody 
@@ -102,7 +107,7 @@ export default connect({
                     </TableRowColumn>
                     <TableRowColumn
                       style={cellStyle}
-                      onTouchTap={()=>{ this.props.floorplanPageRequested({floor:this.props.building+this.props.room.floor})}}>
+                      onTouchTap={()=>{ this.props.floorplanPageRequested({floorplan:this.props.room.building+' '+this.props.room.floor})}}>
                       {this.props.room.floor}
                     </TableRowColumn>
                     <TableRowColumn
@@ -112,6 +117,19 @@ export default connect({
                     <TableRowColumn
                       style={cellStyle}>
                       {this.props.room.area}
+                    </TableRowColumn>
+                    <TableRowColumn style={cellStyle}>
+                      {this.props.attributeDialog ? <AttributeDialog /> : null }
+                      {Object.keys(this.props.room.attributes).map((key, i) => (
+                        this.props.room.attributes[key] ? <Chip
+                          key={'attribute_'+i}>
+                          {key}
+                        </Chip> : null
+                      ))}
+                      <IconButton
+                        onTouchTap={()=>{this.props.attributeEditButtonClicked({})}}
+                        iconClassName="material-icons">edit
+                       </IconButton>
                     </TableRowColumn>
                   </TableRow>
                 </TableBody>
@@ -123,6 +141,7 @@ export default connect({
               color="#c79d50" size={50}
             />
           </div> : <p>Unknown Room</p>}
+          <div className={styles['edit-date']}><p >Last edited {moment(this.props.room.date).format('MMMM Do YYYY, h:mm:ss a')}</p></div>
         </div>
       )
     }

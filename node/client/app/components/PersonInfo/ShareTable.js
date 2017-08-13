@@ -13,25 +13,25 @@ let cellStyle = {
 
 export default connect({
   editing: 'personinfo.editing',
-  rooms: 'roominfo.rooms',
+  shares: 'personinfo.shares',
   newRoomText: 'roomtable.new_room.text',
   matches: 'roomtable.new_room.matches',
   match: 'roomtable.new_room.selected_match',
 }, {
   roomPageRequested: 'viewer.roomPageRequested',
   buildingPageRequested: 'viewer.roomPageRequested',
-  addRoomButtonClicked: 'roomtable.addRoomButtonClicked',
-  newRoomTextChanged: 'roomtable.newRoomTextChanged',
-  removeRoomButtonClicked: 'roomtable.removeRoomButtonClicked',
-  roomMatchSelected: 'roomtable.roomMatchSelected',
+//  addRoomButtonClicked: 'roomtable.addRoomButtonClicked',
+//  newRoomTextChanged: 'roomtable.newRoomTextChanged',
+//  removeRoomButtonClicked: 'roomtable.removeRoomButtonClicked',
+//  roomMatchSelected: 'roomtable.roomMatchSelected',
 },
-  class RoomTable extends React.Component {
+  class ShareTable extends React.Component {
 
     render() {
       return (
         <Paper className={styles['table-container']}>
           <span className={styles['table-title']}>
-            Assigned Rooms
+            Assigned Shares
           </span>
         <Table
           style={{width:'auto'}} 
@@ -43,11 +43,10 @@ export default connect({
             adjustForCheckbox={false}>
             <TableRow>
               <TableHeaderColumn style={cellStyle}></TableHeaderColumn>
-              <TableHeaderColumn style={cellStyle}>Building</TableHeaderColumn>
               <TableHeaderColumn style={cellStyle}>Room</TableHeaderColumn>
               <TableHeaderColumn style={cellStyle}>Type</TableHeaderColumn>
-              <TableHeaderColumn style={cellStyle}>Area</TableHeaderColumn>
-              {this.props.editing ? <TableHeaderColumn style={cellStyle}>Unassign Room</TableHeaderColumn> : null}
+              <TableHeaderColumn style={cellStyle}>Area (ft<sup>2</sup>)</TableHeaderColumn>
+              {/*this.props.editing ? <TableHeaderColumn style={cellStyle}>Unassign Room</TableHeaderColumn> : null*/}
             </TableRow>
           </TableHeader>
           <TableBody
@@ -55,36 +54,32 @@ export default connect({
             stripedRows={true}
             displaySelectAll={false}
             displayRowCheckbox={false}>
-            {this.props.rooms.map((room, index) => (
+            {this.props.shares.map((share, index) => (
               <TableRow 
                 key={index}
-                onTouchTap={()=>{this.props.editing ? null : this.props.roomPageRequested({room:room.name, building:room.building, floor:room.floor})}}>
+                onTouchTap={()=>{/*this.props.editing ? null : */this.props.roomPageRequested({room:share.room, building:share.building, floor:share.floor})}}>
                 <TableRowColumn
                   style={cellStyle}>
                   {index+1}
                 </TableRowColumn>
                 <TableRowColumn
                   style={cellStyle}>
-                  {room.building}
+                  {share.room}
                 </TableRowColumn>
                 <TableRowColumn
                   style={cellStyle}>
-                  {room.name}
+                  {share.type}
                 </TableRowColumn>
                 <TableRowColumn
                   style={cellStyle}>
-                  {room.type}
+                  {share.area}
                 </TableRowColumn>
-                <TableRowColumn
-                  style={cellStyle}>
-                  {room.area}
-                </TableRowColumn>
-                {this.props.editing ? <TableRowColumn style={cellStyle}>
+                {/*this.props.editing ? <TableRowColumn style={cellStyle}>
                   <IconButton
                     onTouchTap={(evt)=>{evt.stopPropagation(); this.props.removeRoomButtonClicked({room, person: this.props.person})}}
                     iconClassName="material-icons">delete
                   </IconButton>
-                </TableRowColumn> : null}
+                </TableRowColumn> : null*/}
               </TableRow>
             ))}
             <TableRow>
@@ -99,27 +94,24 @@ export default connect({
               </TableRowColumn>
               <TableRowColumn
                 style={cellStyle}>
-              </TableRowColumn>
-              <TableRowColumn
-                style={cellStyle}>
-                {this.props.rooms.length > 0 ? this.props.rooms.map((room) => {
-                  return room.area
+                {this.props.shares.length > 0 ? this.props.shares.map((share) => {
+                  return share.area
                 }).reduce((acc, value) => {
                   return parseInt(acc) + parseInt(value)
                 }) : 0}
               </TableRowColumn>
-              {this.props.editing ? <TableRowColumn style={cellStyle}></TableRowColumn> : null }
+              {/*this.props.editing ? <TableRowColumn style={cellStyle}></TableRowColumn> : null*/ }
             </TableRow>
-            {this.props.editing ? <TableRow>
+            {/*this.props.editing ? <TableRow>
               <TableRowColumn
                 style={cellStyle}
                 colSpan="5">
                 <AutoComplete
                   searchText={this.props.newRoomText}
-                  hintText="Assign a new room..."
-                  errorText={(this.props.match.name) ? null : 'An existing room must be selected.'}
+                  hintText="Assign a new share..."
+                  errorText={(this.props.match.name) ? null : 'An existing share must be selected.'}
                   dataSource={this.props.matches.map((match) => (match.name))}
-                  onNewRequest={(text, idx)=>{this.props.roomMatchSelected({idx, text, match:this.props.matches[idx]})}}
+                  onNewRequest={(text, idx)=>{this.props.shareMatchSelected({idx, text, match:this.props.matches[idx]})}}
                   onUpdateInput={(searchText)=>{this.props.newRoomTextChanged({text:searchText})}}
                 />
               </TableRowColumn>
@@ -131,7 +123,7 @@ export default connect({
                   iconClassName="material-icons">add_circle
                 </IconButton>
               </TableRowColumn>
-            </TableRow> : null}
+            </TableRow> : null*/}
           </TableBody>
         </Table>
         </Paper>

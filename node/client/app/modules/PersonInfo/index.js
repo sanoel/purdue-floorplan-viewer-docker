@@ -20,7 +20,7 @@ export default module => {
 
     // Rooms and persons linked to this person in the database. This is an array of room
     // objects as they appear in the database.
-    rooms: [],
+    shares: {},
     persons: [],
 
     //Status for whether the PersonInfo page is being edited.

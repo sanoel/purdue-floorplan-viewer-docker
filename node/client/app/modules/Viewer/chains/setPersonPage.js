@@ -6,15 +6,16 @@ export default [
   getPerson, {
     success: [
       copy('input:person', 'state:personinfo.person'),
-      getPersonsFromPerson, {
+/*      getPersonsFromPerson, {
         success: [
           copy('input:persons', 'state:personinfo.persons'), 
         ],
         error: [],
       },
-      getRoomsFromPerson, {
+*/
+      getSharesFromPerson, {
         success: [
-          copy('input:rooms', 'state:personinfo.rooms'), 
+          copy('input:shares', 'state:personinfo.shares'), 
         ],
         error: [],
       },
@@ -24,20 +25,11 @@ export default [
   },
 ]
 
-export function getRoomsFromPerson({input, services, output}) {
-  services.http.get('roomsFromPerson/'+input.person._key).then((results) => {
-    output.success({rooms:results.result})
-  }).catch((err) => {
-    output.error({message:err})
-  })
-}
-getRoomsFromPerson.outputs=['success', 'error']
-getRoomsFromPerson.async = true;
-
 export function getPerson({input, state, services, output}) {
-  services.http.get('person/'+input.person).then((results) => {
+  return services.http.get('nodes/?type=person&name='+input.person).then((results) => {
     if (results.result.length === 1) return output.success({person:results.result[0]})
     return output.error({message: 'either multiple or zero persons found'})
+    console.log(results.result)
   }).catch((err) => {
     output.error({message:err})
   })
@@ -45,8 +37,19 @@ export function getPerson({input, state, services, output}) {
 getPerson.outputs=['success', 'error']
 getPerson.async = true;
 
+export function getSharesFromPerson({input, services, output}) {
+  services.http.get('edges?type=share&to='+input.person._id).then((results) => {
+    output.success({shares:results.result})
+  }).catch((err) => {
+    output.error({message:err})
+  })
+}
+getSharesFromPerson.outputs=['success', 'error']
+getSharesFromPerson.async = true;
+
+/*
 function getPersonsFromPerson({input, services, output}) {
-  services.http.get('personsFromPerson/'+input.person._key).then((results) => {
+  services.http.get('edges?type=person&'+input.person._key).then((results) => {
     output.success({persons:results.result})
   }).catch((err) => {
     output.error({message:err})
@@ -54,3 +57,4 @@ function getPersonsFromPerson({input, services, output}) {
 }
 getPersonsFromPerson.outputs=['success', 'error']
 getPersonsFromPerson.async = true;
+*/
