@@ -4,7 +4,7 @@ import styles from './attribute-dialog.css'
 import classNames from 'classnames/bind'
 import { IconButton, AutoComplete, Chip, Checkbox, Dialog, Popover, Paper, TextField, FontIcon, Divider, RaisedButton, DropDownMenu, MenuItem, FlatButton} from 'material-ui'
 
-let roomAttributes = ['208 V', '220 V', '480 V', 'Single Phase', 'Three Phase']
+let roomAttributes = ['Fume hood', '208 V', '220 V', '480 V', 'Single Phase', 'Three Phase']
 
 export default connect(props => ({
   attributes: `roominfo.attribute_dialog.attributes`,

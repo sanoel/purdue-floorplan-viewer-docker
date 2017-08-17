@@ -14,7 +14,6 @@ import {
   startEditingRoom,
   addShare,
   removeShare,
-  setNotePopover,
   submitDialog,
   cancelDialog,
   editShare,

@@ -83,7 +83,7 @@ export default connect({
             displaySelectAll={false}
             displayRowCheckbox={false}>
             {Object.keys(this.props.shares).map((key, i) => (
-            <TableRow key={'sharetable-'+i}> 
+            <TableRow key={'sharetable-'+i} style={this.props.shares[key].edit ? { backgroundColor: '#f00'} : null }> 
               <TableRowColumn style={cellStyle}>{this.props.shares[key].type}</TableRowColumn>}
               <TableRowColumn style={cellStyle}>{this.props.shares[key].percent}</TableRowColumn>
               <TableRowColumn style={cellStyle}>{this.props.shares[key].assigned}</TableRowColumn>

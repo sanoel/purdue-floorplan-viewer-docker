@@ -144,7 +144,7 @@ class ShareDialog extends React.Component {
           />
           <IconButton                                                                                
             onTouchTap={()=>{this.props.addPersonButtonClicked({ share: this.props.share, text: this.props.newPersonText, match: this.props.match })}}
-            disabled={/*this.props.newPersonText.length > 0 ? false : true*/ this.props.match._key ? false : true}
+            disabled={this.props.newPersonText.length <= 0}
             iconClassName="material-icons">add_circle
           </IconButton>
 
