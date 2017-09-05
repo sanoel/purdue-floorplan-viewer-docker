@@ -56,7 +56,8 @@ export default module => {
     // Used to indicate whether the app is currently importing / exporting the
     // data for rooms.
     importing_rooms: false,
-    exporting_rooms: false
+    exporting_rooms: false,
+    generating_smas_report: false,
   })
 
   module.addSignals({

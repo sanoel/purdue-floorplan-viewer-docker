@@ -19,7 +19,6 @@ export default [
 
 function getBuilding({input, services, output}) {
   services.http.get('/nodes?type=building&name='+input.building).then((results) => {
-    console.log(results.result)
     output.success({building:results.result[0]})
   }).catch((err) => {
     console.log(err);
@@ -30,7 +29,6 @@ getBuilding.outputs=['success', 'error']
 getBuilding.async = true;
 
 function getFloorplansFromBuilding({input, services, output}) {
-  console.log(input.building)
   services.http.get('/edges?type=floorplan&from='+input.building._id).then((results) => {
     output.success({floorplans:results.result})
   }).catch((err) => {

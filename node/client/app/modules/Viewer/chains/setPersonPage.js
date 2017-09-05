@@ -26,10 +26,9 @@ export default [
 ]
 
 export function getPerson({input, state, services, output}) {
-  return services.http.get('nodes/?type=person&name='+input.person).then((results) => {
+  return services.http.get('nodes/?type=person&name='+encodeURIComponent(input.person)).then((results) => {
     if (results.result.length === 1) return output.success({person:results.result[0]})
     return output.error({message: 'either multiple or zero persons found'})
-    console.log(results.result)
   }).catch((err) => {
     output.error({message:err})
   })

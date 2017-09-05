@@ -13,6 +13,7 @@ import stylesLogin from '../Login/styles.css'
 import AssignedPersonTable from './AssignedPersonTable'
 import SharesTable from './ShareTable'
 import AttributeDialog from './AttributeDialog'
+import OriginalSharesDialog from '../OriginalSharesDialog'
 import styles from './styles.css'
 import classNames from 'classnames/bind'
 import {Table, TableBody, TableFooter, TableHeader, TableHeaderColumn, TableRow, TableRowColumn} from 'material-ui/Table'
@@ -32,6 +33,7 @@ export default connect({
   departments: 'personinfo.departments',
   app_ready: 'app.ready',
   room_edits: 'roominfo.room_edits',
+  originalSharesDialog: 'originalsharesdialog.open',
 }, {
   editButtonClicked: 'roominfo.editButtonClicked',
   doneButtonClicked: 'roominfo.doneButtonClicked',
@@ -39,6 +41,7 @@ export default connect({
   buildingPageRequested: 'viewer.buildingPageRequested',
   floorplanPageRequested: 'viewer.floorplanPageRequested',
   attributeEditButtonClicked: 'roominfo.attributeEditButtonClicked',
+  originalSharesButtonClicked: 'originalsharesdialog.originalSharesButtonClicked',
 },
   class RoomInfo extends React.Component {
 
@@ -92,6 +95,7 @@ export default connect({
                     <TableHeaderColumn style={cellStyle}>Room</TableHeaderColumn>
                     <TableHeaderColumn style={cellStyle}>Total Area (ft<sup>2</sup>)</TableHeaderColumn>
                     <TableHeaderColumn style={cellStyle}>Attributes</TableHeaderColumn>
+                    <TableHeaderColumn style={cellStyle}>View Original SMAS Shares</TableHeaderColumn>
                   </TableRow>
                 </TableHeader>
                 <TableBody 
@@ -129,6 +133,13 @@ export default connect({
                       <IconButton
                         onTouchTap={()=>{this.props.attributeEditButtonClicked({})}}
                         iconClassName="material-icons">edit
+                       </IconButton>
+                    </TableRowColumn>
+                    <TableRowColumn style={cellStyle}>
+                      {this.props.originalSharesDialog ? <OriginalSharesDialog /> : null }
+                      <IconButton
+                        onTouchTap={()=>{this.props.originalSharesButtonClicked({})}}
+                        iconClassName="material-icons">description
                        </IconButton>
                     </TableRowColumn>
                   </TableRow>

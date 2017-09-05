@@ -79,7 +79,7 @@ app.get('/search', (req, res) => {
 
 app.get('/nodes', (req, res) => {
   let collection = db.collection('nodes')
-  collection.byExample({ _type: req.query.type, name: req.query.name })
+  collection.byExample({ _type: req.query.type, name: decodeURI(req.query.name) })
   .then((cursor) => {
     res.json(cursor._result)
   }).catch((err) => {

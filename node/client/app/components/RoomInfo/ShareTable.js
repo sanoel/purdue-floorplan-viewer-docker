@@ -83,22 +83,22 @@ export default connect({
             displaySelectAll={false}
             displayRowCheckbox={false}>
             {Object.keys(this.props.shares).map((key, i) => (
-            <TableRow key={'sharetable-'+i} style={this.props.shares[key].edit ? { backgroundColor: '#f00'} : null }> 
-              <TableRowColumn style={cellStyle}>{this.props.shares[key].type}</TableRowColumn>}
-              <TableRowColumn style={cellStyle}>{this.props.shares[key].percent}</TableRowColumn>
-              <TableRowColumn style={cellStyle}>{this.props.shares[key].assigned}</TableRowColumn>
-              <TableRowColumn style={cellStyle}>{this.props.shares[key].using}</TableRowColumn>
-              <TableRowColumn style={cellStyle}>{this.props.shares[key].area}</TableRowColumn>
-              <TableRowColumn style={cellStyle}>{this.props.shares[key].stations}</TableRowColumn>
-              <TableRowColumn style={cellStyle}>{Object.keys(this.props.shares[key].persons).map((person, p) => (
+            <TableRow key={'sharetable-'+i}> 
+              <TableRowColumn style={cellStyle, this.props.shares[key].edit ? {backgroundColor: '#f00' } : null}>{this.props.shares[key].type}</TableRowColumn>}
+              <TableRowColumn style={cellStyle, this.props.shares[key].edit ? {backgroundColor: '#f00' } : null}>{this.props.shares[key].percent}</TableRowColumn>
+              <TableRowColumn style={cellStyle, this.props.shares[key].edit ? {backgroundColor: '#f00' } : null}>{this.props.shares[key].assigned}</TableRowColumn>
+              <TableRowColumn style={cellStyle, this.props.shares[key].edit ? {backgroundColor: '#f00' } : null}>{this.props.shares[key].using}</TableRowColumn>
+              <TableRowColumn style={cellStyle, this.props.shares[key].edit ? {backgroundColor: '#f00' } : null}>{this.props.shares[key].area}</TableRowColumn>
+              <TableRowColumn style={cellStyle, this.props.shares[key].edit ? {backgroundColor: '#f00' } : null}>{this.props.shares[key].stations}</TableRowColumn>
+              <TableRowColumn style={cellStyle, this.props.shares[key].edit ? {backgroundColor: '#f00' } : null}>{Object.keys(this.props.shares[key].persons).map((person, p) => (
                 <Chip
                   onTouchTap={()=>{this.props.personClicked({person:this.props.shares[key].persons[person].name})}}
                   key={'person_chip_'+p}>
                   {this.props.shares[key].persons[person].name}
                 </Chip> ))}
               </TableRowColumn>
-              <TableRowColumn style={cellStyle}>{this.props.shares[key].note}</TableRowColumn>
-              <TableRowColumn style={cellStyle}>
+              <TableRowColumn style={cellStyle, this.props.shares[key].edit ? {backgroundColor: '#f00' } : null}>{this.props.shares[key].note}</TableRowColumn>
+              <TableRowColumn style={cellStyle, this.props.shares[key].edit ? {backgroundColor: '#f00' } : null}>
                 <IconButton                                                                                
                   onTouchTap={()=>{this.props.shareEditButtonClicked({share: this.props.shares[key]})}}
                   disabled={false}

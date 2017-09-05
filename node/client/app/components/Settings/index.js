@@ -4,6 +4,7 @@ import Dropzone from 'react-dropzone';
 import stylesLogin from '../Login/styles.css'
 import styles from './styles.css'
 import classNames from 'classnames/bind'
+import { CircularProgress } from 'material-ui'
 let cx = classNames.bind(styles)
 import SmoothScroll from 'smoothscroll-polyfill'
 // Initialize smoothscroll-polyfill.
@@ -14,7 +15,8 @@ export default connect({
   importing_rooms: 'app.importing_rooms',
   exporting_rooms: 'app.exporting_rooms',
   dropzone_hint: 'viewer.dropzone_hint',
-  app_ready: 'app.ready'
+  app_ready: 'app.ready',
+  loading: 'app.generating_smas_report',
 }, {
   exportSmas: 'app.smasDataExportRequested',
   importRooms: 'app.roomsDataImportationRequested',
@@ -41,21 +43,6 @@ export default connect({
             <br/>
           </div>
           <div className={cx('content')}>
-            <div className={cx('export-room-data-div')}>
-              <button 
-                className={cx('pure-button', stylesLogin['purdue-button'], 'export-room-data-button')}
-                onClick={()=> this.props.exportRoomsJson()}>
-                Backup Data
-              </button>
-            </div>
-
-            <div className={cx('export-smas-data-div')}>
-              <button 
-                className={cx('pure-button', stylesLogin['purdue-button'], 'export-smas-data-button', {'display-none': this.props.importing_rooms})}
-                onClick={()=>this.props.exportSmas()}>
-                Export SMAS Data
-              </button>
-            </div>
 
             <div className={cx('import-room-data-dropzone-div', {'display-none': !this.props.importing_rooms})}>
               <hr/>
@@ -71,7 +58,7 @@ export default connect({
               <button 
                 className= {cx('pure-button', stylesLogin['purdue-button'], 'import-room-data-button', {'display-none': this.props.importing_rooms})}
                 onClick={()=>this.props.importRooms()}>
-                Import Data
+                Generate SMAS Report 
               </button>
               <button 
                 className= {cx('pure-button', stylesLogin['purdue-button'], 'cancel-import-room-data-button', {'display-none': !this.props.importing_rooms})}
@@ -86,6 +73,9 @@ export default connect({
       return (
 
         <div className = {cx('wrapper', {'disabled':!this.props.app_ready})}>
+          {this.props.loading ? <div className={cx('loading-modal')}>
+            <CircularProgress />
+           </div> : null }
           <div className={cx('title')}>Settings</div>
           {dataBackup}
         </div>

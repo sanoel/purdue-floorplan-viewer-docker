@@ -31,7 +31,6 @@ getFloorplan.async = true;
 
 export function getRoomsFromFloorplan({input, state, services, output}) {
   services.http.get('/edges?type=room&from='+input.floorplan._id).then((results) => {
-    console.log(results.result)
     var rooms = {}; 
     results.result.forEach((res) => {
       rooms[res.name] = res;

@@ -20,6 +20,7 @@ import RoomInfo from './modules/RoomInfo'
 import PersonInfo from './modules/PersonInfo'
 import RoomTable from './modules/RoomTable'
 import PersonTable from './modules/PersonTable'
+import OriginalSharesDialog from './modules/OriginalSharesDialog'
 
 
 const controller = Controller(Model({}))
@@ -65,6 +66,7 @@ controller.addModules({
 
   roomtable: RoomTable,
   persontable: PersonTable,
+  originalsharesdialog: OriginalSharesDialog,
 
   router: Router({
     '/': 'app.frontPageRequested',

@@ -286,6 +286,11 @@ function unsetShare({input, state}) {
 
 function addTempShare({input, state, services, output}) {
   let shares = state.get('roominfo.room.shares')
+  let shareNumber = _.reduce(shares, (acc, sh, i) => {
+    let num = parseInt(sh.share || sh.name.split('-')[1].trim());
+    if (acc > num) return acc;
+    return num
+  }, 0) + 1;
   let room = state.get('roominfo.room')
   let username = state.get('login.user.name')
   let share = {
@@ -300,6 +305,7 @@ function addTempShare({input, state, services, output}) {
     building: room.building,
     floor: room.floor,
     room: room.name,
+    share: shareNumber.toString(),
     _type: 'share',
     edit: { 
       date: new Date(), 

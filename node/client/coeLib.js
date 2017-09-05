@@ -85,10 +85,12 @@ function getSmasRoomsShares(data) {
       area: '0',
       date: row['date'] || Date.now(),
       _type: 'room',
+      smas: {},
     }
     rooms[name].area = (parseInt(rooms[name].area) + parseInt(row['Area'])).toString()
     let share = name + '-'+row['Share Number']
     shares[share] = {
+      share: row['Share Number'],
       building: rooms[name].building,
       floor: rooms[name].floor,
       room: name,
@@ -104,12 +106,16 @@ function getSmasRoomsShares(data) {
     if (row['Description'].indexOf('On Loan') !== -1) {
       shares[share].description = row['Internal Note']
       shares[share].loans = row['Description']
-      shares[share].note = ''.split(';');
+//      shares[share].note = ''.split(';');
+      shares[share].note = '';
     } else {
       shares[share].description = row['Description']
-      shares[share].note = row['Internal Note'].split(';')
+      shares[share].note = row['Internal Note']
+//      shares[share].note = row['Internal Note'].split(';')
     }
     rooms[name].fulltext = createFullText(rooms[name], searchableRoomAttributes);
+//    rooms[name].originalShares = shares
+    rooms[name].smas[share] = shares[share];
     return rooms[name];
   }).then(() => {
     return {rooms, shares};
@@ -396,5 +402,6 @@ module.exports = {
   parsePersonsFromSmasDescription,
   searchableFloorplanAttributes,
   searchableRoomAttributes,
-  searchablePeopleAttributes
+  searchablePeopleAttributes,
+  smasRoomTypesWithPeople,
 }
