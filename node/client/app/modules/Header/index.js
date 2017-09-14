@@ -1,9 +1,10 @@
-import logout from '../Login/chains/logout'
+import { login, logout } from '../Login/chains'
 
 export default module => {
 
   module.addSignals({
-    logoutClicked: logout
+    logoutClicked: logout,
+    loginClicked: login,
   })
 
 }

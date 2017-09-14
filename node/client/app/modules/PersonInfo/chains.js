@@ -1,5 +1,5 @@
 import {copy, set, toggle} from 'cerebral/operators'
-import { getRoomsFromPerson, getPersonsFromPerson } from '../../Viewer/chains/setPersonPage'
+import { getRoomsFromPerson, getPersonsFromPerson } from '../Viewer/chains'
 
 export var toggleEditMode = [
   toggle('state:personinfo.editing'),

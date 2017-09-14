@@ -1,5 +1,5 @@
 import {copy, set} from 'cerebral/operators'
-import { getRoomsFromPerson, getPersonsFromPerson } from '../../Viewer/chains/setPersonPage'
+import { getRoomsFromPerson, getPersonsFromPerson } from '../Viewer/chains'
 
 export var setRoomMatch = [
   copy('input:match', 'state:roomtable.new_room.selected_match'),

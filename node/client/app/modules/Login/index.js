@@ -1,5 +1,7 @@
-import updateLoginInputs from './chains/updateLoginInputs'
-import validateLogin from './chains/validateLogin'
+import {
+  validateLogin,
+  updateLoginInputs,
+} from './chains'
 
 export default module => {
 

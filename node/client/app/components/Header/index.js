@@ -6,12 +6,13 @@ import styles from './styles.css'
 import { RaisedButton, FontIcon } from 'material-ui';
 
 export default connect({
-  username: 'login.user.name',
+  username: 'login.profile',
   permission_granted: 'app.permission_granted'
 }, {
   settingsPageRequested: 'app.settingsPageRequested',
   frontPageRequested: 'app.frontPageRequested',
-  logoutClicked: 'header.logoutClicked'
+  logoutClicked: 'header.logoutClicked',
+  logoutClicked: 'header.loginClicked'
 },
   class Header extends React.Component {
 
@@ -28,11 +29,11 @@ export default connect({
           />
           <RaisedButton 
             className={[stylesLogin['purdue-button'], styles['header-button']].join(' ')}
-            label='Logout'
+            label={this.props.username ? 'Logout' : 'Login'}
             labelPosition='before'
             primary={true}
-            icon={<FontIcon className="fa fa-sign-out" />}
-            onTouchTap={(evt) => this.props.logoutClicked(evt)}
+            icon={<FontIcon className={this.props.username ? "fa fa-sign-out": "fa fa-sign-in"} />}
+            onTouchTap={this.props.username ? (evt) => this.props.logoutClicked(evt) : (evt) => this.props.loginClicked(evt)}
           />
         </div>
       )

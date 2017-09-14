@@ -1,11 +1,13 @@
-import setBuildingPage from './chains/setBuildingPage'
-import setFloorplanPage from './chains/setFloorplanPage'
-import setRoomsOnFloorplansPage from './chains/setRoomsOnFloorplansPage'
-import setRoomPage from './chains/setRoomPage'
-import setPersonPage from './chains/setPersonPage'
-import setCardsPage from './chains/setCardsPage'
-import setLoadingPage from './chains/setLoadingPage'
-import handleSearchResult from './chains/handleSearchResult'
+import {
+  setBuildingPage,
+  setFloorplanPage,
+  setRoomsOnFloorplansPage,
+  setRoomPage,
+  setPersonPage,
+  setCardsPage,
+  setLoadingPage,
+  handleSearchResult
+} from './chains'
 
 // Router takes care of this part now.
 //

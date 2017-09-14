@@ -1,8 +1,8 @@
-import { 
-removePerson, 
-addPerson, 
-setPersonMatch,
-updateNewPersonText,
+import {
+  removePerson, 
+  addPerson, 
+  setPersonMatch,
+  updateNewPersonText,
 } from './chains'
 
 export default module => {

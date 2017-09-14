@@ -6,7 +6,7 @@ var concat = require("concat-stream");
 var isDeveloping = process.env.NODE_ENV !== 'production';
 var thePort = isDeveloping ? 3000 : process.env.PORT;
 var contentBase = path.resolve(__dirname, './build');
-var server_addr = process.env.ARANGODB_SERVER ? process.env.ARANGODB_SERVER : "http://localhost:8529";
+var server_addr = process.env.ARANGO_SERVER ? process.env.ARANGO_SERVER : "http://localhost:8529";
 var ignore = console.log("Using DB-Server " + server_addr);
 var Database = require("arangojs");
 var aql = require("arangojs").aql;
@@ -17,15 +17,49 @@ if (server_addr !== "none") {
 }
 var express = require('express');
 var app = express();
+var helmet = require('helmet');
+var session = require('express-session');
+var CASAuthentication = require('cas-authentication')
+var passport = require('passport')
+var SamlStrategy = require('passport-saml').Strategy
+
+const relativePathToFloorplans = '/img/svgFloorPlans/svgFloorPlansSim/svgoManSvgo/';
 
 var nodes = db.collection('nodes');
 var edges = db.collection('edges');
 var putRoute = '';
 
 app.use(express.static(contentBase));
+app.use(helmet());
+//app.use(session({
+//  secret: 'super secret key',
+//  resave: false,
+//  saveUninitialized: true
+//}))
 
 /////////////////////////////////////////////////////////////
-const relativePathToFloorplans = '/img/svgFloorPlans/svgFloorPlansSim/svgoManSvgo/';
+/*
+passport.use(new SamlStrategy({
+  path: 'http://localhost',
+  entryPoint: 'https://www.purdue.edu/apps/account/cas/login?service=http://localhost',
+  issuer: 'passport-saml',
+}, (profile, done) => {
+  console.log(profile)
+  return done(null, profile)
+}))
+*/
+
+/////////////////////////////////////////////////////////////
+//var cas = new CASAuthentication({
+//  cas_url: 'https://www.purdue.edu/apps/account/cas/login',
+//  service_url: 'https://floorplans.ecn.purdue.edu',
+//  service_url: 'http://localhost',
+//  cas_version: '3.0',
+//  renew: false,
+//})
+
+/////////////////////////////////////////////////////////////
+
 
 app.get(relativePathToFloorplans, (req, res) => {
   let floorplanNames = fs.readdirSync(path.join(contentBase, relativePathToFloorplans));
@@ -165,177 +199,9 @@ app.get('/collectionById/:collection/:key', (req, res) => {
   })
 })
 
+//app.get('/login', passport.authenticate)
 
-
-///////////////////////////////////////////////////////
-//////////////////////////////////////////////////////
-/*
-
-app.get('/personsFromPerson/:key', function(req, res) {
-  var key = 'person/' + req.params['key'];
-  var supervisors = [];
-  var subordinates = []
-  db.query(aql`
-    FOR v IN 1..1 
-      OUTBOUND ${key}
-      supervisorPersonEdges
-    RETURN v`
-  ).then(function(cursor) {
-    supervisors = cursor._result;
-    db.query(aql`
-      FOR v IN 1..1 
-        INBOUND ${key}
-        supervisorPersonEdges
-      RETURN v`
-    ).then(function(cursor) {
-      subordinates = cursor._result;
-      res.json({subordinates, supervisors})
-    })
-  }).catch((err) => {
-    console.log(err);
-    res.json(err);
-  })
-})
-
-app.get('/person/:key', function(req, res) {
-  var example = {name: req.params['key']}
-  personCollection.byExample(example).then((cursor) => {
-    if (cursor.count === 0 ) {
-      console.log('PERSON NOT FOUND:', req.params['key']);
-      res.json(cursor._result)
-    } else if (cursor.count > 1) {
-      console.log('MULTIPLE PERSONS FOUND: ', cursor._result);
-      res.json(cursor._result);
-    }
-    res.json(cursor._result);
-  }).catch((err) => {
-    console.log(err);
-    res.json(err);
-  })
-})
-
-app.get('/floorplan/:key', function(req, res) {
-  var example = {name: req.params['key']}
-  floorplanCollection.byExample(example).then((cursor) => {
-    if (cursor.count === 0 ) {
-      console.log('FLOORPLAN NOT FOUND:', req.params['key']);
-      res.json(undefined)
-    } else if (cursor.count > 1) {
-      console.log('MULTIPLE FLOORPLANS FOUND: ', cursor._result);
-    }
-    res.json(cursor._result[0]);
-  }).catch((err) => {
-    console.log(err);
-    res.json(err);
-  })
-})
-
-app.get('/building/:key', function(req, res) {
-  var example = {name: req.params['key']}
-  buildingCollection.byExample(example).then((cursor) => {
-    if (cursor.count === 0 ) {
-      console.log('BUILDING NOT FOUND:', req.params['key']);
-      res.json(undefined)
-    } else if (cursor.count > 1) {
-      console.log('MULTIPLE BUILDINGS FOUND: ', cursor._result);
-    }
-    res.json(cursor._result[0]);
-  }).catch((err) => {
-    console.log(err);
-    res.json(err);
-  })
-})
-
-////////////////////////////////////////////////
-
-app.put('/person/', function(req, res) {
-  req.pipe(concat(function(body) {
-    personCollection.save(JSON.parse(body)).then((result)=>{
-      res.json(result)
-    }).catch((err)=>{
-      console.log(err)
-      res.json(err)
-    })
-  }))
-})
-
-app.put('/roomPersonEdges/', function(req, res) {
-  req.pipe(concat(function(body) {
-    roomPersonEdges.save(JSON.parse(body)).then((result)=>{
-      res.json(result)
-    }).catch((err)=>{
-      console.log(err)
-      res.send(err)
-    })
-  }))
-})
-
-app.put('/updatePerson/', function(req, res) {
-  req.pipe(concat(function(body) {
-    var body = JSON.parse(body)
-    personCollection.updateByExample(body.example, body.newValue).then((result)=>{
-      res.json(result)
-    }).catch((err)=>{
-      console.log(err)
-      res.send(err)
-    })
-  }))
-})
-
-app.put('/updateRoom/', function(req, res) {
-  req.pipe(concat(function(body) {
-    var body = JSON.parse(body)
-    roomCollection.updateByExample(body.example, body.newValue).then((result)=>{
-      res.json(result)
-    }).catch((err)=>{
-      console.log(err)
-      res.send(err)
-    })
-  }))
-})
-
-app.delete('/roomPersonEdges?', function(req, res) {
-  let example = {_from:'room/'+req.query.from, _to: 'person/'+req.query.to}
-  console.log(example)
-  roomPersonEdges.removeByExample(example).then((result)=>{
-    res.json(result)
-  }).catch((err)=>{
-    console.log(err)
-    res.send(err)
-  })
-})
-
-//TODO; duplicate this for keyholders
-app.delete('/deleteRoomPersonEdge?', function(req, res) {
-  let example = {_from:'room/'+req.query.room, _to: 'person/'+req.query.person}
-  roomPersonEdges.removeByExample(example).then((result)=>{
-    res.json(result)
-  }).catch((err)=>{
-    console.log(err)
-    res.send(err)
-  })
-})
-
-app.get('/searchPersons/:key', function(req, res) {
-  var key = 'prefix:'+req.params['key'].split(' ').join(',prefix:');
-  personCollection.fulltext('fulltext', key).then((cursor) => {
-    res.json(cursor._result)
-  }).catch((err) => {
-    console.log(err);
-    res.json(err);
-  })
-})
-
-app.get('/searchRooms/:key', function(req, res) {
-  var key = 'prefix:'+req.params['key'].split(' ').join(',prefix:');
-  roomCollection.fulltext('fulltext', key).then((cursor) => {
-    res.json(cursor._result)
-  }).catch((err) => {
-    console.log(err);
-    res.json(err);
-  })
-})
-*/
+//app.get('/authenticate', passport.authenticate);
 
 var server = app.listen(thePort, function () {
   var host = server.address().address

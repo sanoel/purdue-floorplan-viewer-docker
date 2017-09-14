@@ -1,4 +1,40 @@
-function validateLogin({input, state}) {
+import {set, copy } from 'cerebral/operators';
+
+export let login = [
+  log_in,
+]
+
+export let logout = [
+  log_out
+]
+
+export let updateLoginInputs = [
+  setLoginInputs
+]
+
+export let validateLogin = [
+  // Disable the input boxes until the validation is done.
+  set('state:login.is_validating', true),
+  validate_Login,
+  // The validation is done. Enable the input boxes.
+  set('state:login.is_validating', false)
+]
+
+function log_in({input, state}) {
+
+}
+
+function setLoginInputs({input, state}) {
+  // Update name / password depending on which input box changes.
+  state.set('login.user.'+input.id, input.value)
+}
+
+function log_out({state}) {
+  state.set('app.permission_granted', false)
+  saveLoginState(false, undefined)
+}
+
+function validate_Login({input, state}) {
 
   // TODO: Change hard-coded user info with something better.
   let validUserInfo = {'test': '123'}
@@ -31,8 +67,6 @@ function validateLogin({input, state}) {
   // And always clear the password stored.
   state.set('login.user.password', '')
 }
-
-export default validateLogin
 
 /*
   Helps for storing / Retrieving login information to / from the local storage.

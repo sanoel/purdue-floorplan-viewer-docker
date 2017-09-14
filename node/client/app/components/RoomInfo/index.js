@@ -152,7 +152,7 @@ export default connect({
               color="#c79d50" size={50}
             />
           </div> : <p>Unknown Room</p>}
-          <div className={styles['edit-date']}><p >Last edited {moment(this.props.room.date).format('MMMM Do YYYY, h:mm:ss a')}</p></div>
+          {/*<div className={styles['edit-date']}><p >Last edited {moment(this.props.room.edit.date).format('MMMM Do YYYY, h:mm:ss a')}</p></div>*/}
         </div>
       )
     }

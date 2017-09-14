@@ -1,23 +1,19 @@
-import initiateApp from './chains/initiateApp'
-import wait from './actions/wait'
-import resetApp from './chains/resetApp'
-
-import setFrontPage from './chains/setFrontPage'
-import setNotFoundPage from './chains/setNotFoundPage'
-import setSettingsPage from './chains/setSettingsPage'
-
-import updateRoomsData from './chains/updateRoomsData'
-import exportRoomsData from './chains/exportRoomsData'
-import exportSmasData from './chains/exportSmasData'
-import initiateRoomsDataImportation from './chains/initiateRoomsDataImportation'
-import cancelRoomsDataImportation from './chains/cancelRoomsDataImportation'
-import importRoomsData from './chains/importRoomsData'
-import { computeSmasDiffs } from './chains/index.js'
+import {
+  cancelRoomsDataImportation,
+  initiateRoomsDataImportation,
+  exportSmasData,
+  setSettingsPage,
+  setFrontPage,
+  setNotFoundPage,
+  exportRoomsData,
+  importRoomsData,
+  initiateApp,
+  computeSmasDiffs
+} from './chains'
 
 export default module => {
 
   module.addState({
-    // TODO: use a database instead.
     /*
     After initiation, floorplans it will be an object of floor plan svg files, with
     the keys being the meta data names and the values being undefined if not
@@ -35,14 +31,12 @@ export default module => {
       }
     */
     floorplans: {},
-    // All the room information we have.
-    rooms_meta_data: {},
+    rooms_meta_data: {}, // All the room information we have.
     // Whether the app is saving (currently using HTTP POST method) the data for
     // rooms.
     saving_rooms: false,
 
-    // Login management.
-    permission_granted: false,
+    permission_granted: false, // Login management.
 
     // To indicate whether an initiation for the app has been done / scheduled.
     // Used to avoid redundant floorplan / room information downloading
@@ -64,9 +58,7 @@ export default module => {
     frontPageRequested: setFrontPage,
     settingsPageRequested: setSettingsPage,
     notFoundPageOpened: setNotFoundPage,
-//    roomsDataUpdateRequested: updateRoomsData,
     roomsDataExportationRequested: exportRoomsData,
-    smasDataExportRequested: exportSmasData,
     roomsDataImportationRequested: initiateRoomsDataImportation,
     roomsDataImportationAborted: cancelRoomsDataImportation,
     roomsDataFileReceived: importRoomsData,

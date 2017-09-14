@@ -18,7 +18,6 @@ export default connect({
   app_ready: 'app.ready',
   loading: 'app.generating_smas_report',
 }, {
-  exportSmas: 'app.smasDataExportRequested',
   importRooms: 'app.roomsDataImportationRequested',
   exportRoomsJson: 'app.roomsDataExportationRequested',
   cancelImport: 'app.roomsDataImportationAborted',

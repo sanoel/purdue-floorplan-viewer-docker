@@ -1,4 +1,6 @@
-import updateSearchBarInput from './chains/updateSearchBarInput'
+import {
+  updateSearchBarInput,
+} from './chains'
 
 export default module => {
 
@@ -18,5 +20,4 @@ export default module => {
       immediate: true
     }
   })
-
 }

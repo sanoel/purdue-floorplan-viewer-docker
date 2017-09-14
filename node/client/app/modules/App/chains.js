@@ -1,8 +1,127 @@
-import { set, copy } from 'cerebral/operators'
+import { set, copy, when } from 'cerebral/operators'
 import Promise from 'bluebird'
 import csvjson from 'csvjson'
 import fd from 'react-file-download'
-import coeLib  from '../../../../coeLib.js'
+import coeLib  from '../../../coeLib.js'
+import { updateSearchBarInput } from '../Sidebar/chains'
+import { validateLogin } from '../Login/chains'
+import redirectToSignal from 'cerebral-module-router/redirectToSignal'
+import fileDownload from 'react-file-download'
+
+export let cancelRoomsDataImportation = [
+  set('state:viewer.dropzone_hint', ''),
+  set('state:app.importing_rooms', false)
+]
+
+export let initiateRoomsDataImportation = [
+  when('state:viewer.dropzone_hint'), {
+    true: [],
+    false: [set('state:viewer.dropzone_hint', 'Drop a SMAS .csv file here or click to browse and select a file.')]
+  },
+  set('state:app.importing_rooms', true)
+]
+
+export let exportSmasData = [
+  // set('state:app.exporting_rooms', true),
+  exportSmasData,
+  // set('state:app.exporting_rooms', false)
+]
+
+export let setSettingsPage = [
+  set('viewer.state.current_page', 'settings')
+]
+
+export let setNotFoundPage = [
+  set('viewer.state.current_page', 'notfoundpage')
+]
+
+export let exportRoomsData = [
+  // set('state:app.exporting_rooms', true),
+  exportRoomsMetaData,
+  // set('state:app.exporting_rooms', false)
+]
+
+export let resetApp = [
+  // Create the searchbar_input and viewer_state fields in the input.
+  validateInputForResetApp,
+  // Clear / update the search bar and the suggestion table.
+  ...updateSearchBarInput,
+  // Reset the viewer states.
+  copy('input:viewer_state', 'state:viewer.state')
+]
+
+export let initiateApp = [
+  checkInitializationState, {
+    initialized: [
+    ],
+    uninitialized: [
+      set('state:app.initialized', true),
+      ...validateLogin,
+
+      loadSvgFileNames, {
+        success: [
+          initiateSupportedFloorPlans,
+        ],
+        error: [
+          displayErrorOnSidebar
+        ]
+      },
+
+      set('state:app.ready', true)
+    ]
+  }
+]
+
+export let setFrontPage = [
+  ...initiateApp,
+  wait,
+  ...resetApp,
+  wait,
+  // Also get rid of the error information in the sidebar if there is any.
+  set('state:sidebar.error', ''),
+]
+
+export let importRoomsData = [
+  set('state:app.exporting_rooms', false),
+  readDropPanFile, {
+    success: [
+      getRoomsData, {
+        success: [
+          // The JSON file for the rooms was successfully loaded. We will need
+          // to re-initiate the suggestion engine.
+          set('app.ready', false),
+
+          set('viewer.dropzone_hint', 'The JSON file is imported successfully. Initiating the app...'),
+
+          //initiateRoomsData,
+          // For convenience, we will just reload the floorplans.
+          loadSvgFileNames, {
+            success: [
+              initiateSupportedFloorPlans,
+              // Initiate the suggestion engine.
+              // Done.
+              set('app.ready', true),
+              set('app.importing_rooms', false),
+              set('viewer.dropzone_hint', ''),
+              // Get rid of the error information if there is any.
+              set('state:sidebar.error', ''),
+              redirectToSignal('app.frontPageRequested')
+            ],
+            error: [
+              displayErrorOnSidebar
+            ]
+          }
+        ],
+        error: [
+          set('viewer.dropzone_hint', 'It seems the file imported is not a valid JSON file... Try again?')
+        ]
+      }
+    ],
+    error: [
+      set('viewer.dropzone_hint', 'Error reading the file... Try again?')
+    ]
+  }
+]
 
 export var computeSmasDiffs = [
   set('state:app.generating_smas_report', true),
@@ -108,7 +227,6 @@ function getDbShares({input, state, output, services}) {
                   dbShare['Internal Note'] = share.note;
                   if (dbShare['Description'].indexOf(',') > -1) {
                     dbShare['Description'] = `"${dbShare['Description']}"`
-                    console.log('111111111', dbShare['Description'])
                   }
                   roomShares.push(dbShare)
                   return 
@@ -118,7 +236,6 @@ function getDbShares({input, state, output, services}) {
               dbShare['Internal Note'] = share.note;
               if (dbShare['Description'].indexOf(',') > -1) {
                 dbShare['Description'] = `"${dbShare['Description']}"`
-                console.log('111111111', dbShare['Description'])
               }
               roomShares.push(dbShare)
               return
@@ -255,121 +372,134 @@ function compareRoomShares(smas, db) {
   return diffs
 }
 
-/*
-function diffCheck({input, state, output, services}) {
-// Steps
-// 1. Parse a SMAS csv file
-// 2. Loop through the SMAS room entries
-// 3. Convert rooms to room documents 
-// 4. Parse out people from the description and convert to person documents
-// 4a. Do a GET on the room document byExample
-// 4b. Do a GET on all links involving the rooms of interest.
-// 4c. Loop through the rooms of interest and determine whether all of the parsed people 
-//     names exist as links. Perform a byExample search on roomPeopleEdges.
+function loadSvgFileNames({state, output, services}) {
+  let PATH_TO_SVG = 'img/svgFloorPlans/svgFloorPlansSim/svgoManSvgo/'
+  return services.http.get(PATH_TO_SVG)
+    .then(output.success)
+    .catch( () => output.error(
+      {'errorMsg': 'initiateApp: Unable to load svg floor plan file names!'}
+    ))
+}
+loadSvgFileNames.async = true
 
-  let smasRooms;
-  let smasPeople;
-  let diffs = []
-  let shareRoomIndex = 0;
-  return coeLib.getSmasRooms(input.data).then((smasRooms)=>{
-    return Promise.each(Object.keys(smasRooms), (key) => {
-      let smasRoom = smasRooms[key]
-      return services.http.get('/nodes?name='+smasRoom.name+'&type=room').then((response) => {
-        let dbRoom;
-        if (results.result.length > 0) {
-          dbRoom = results.result[0]
-          smasRoom.shares.forEach((smasShare, i) => {
-// If the share exists in the database, include it in the change log
-// This handles cases where more shares exist in the new SMAS file as compared
-// to whats currently in the database.
-            if (!_.isEqual(smasShare, dbRoom.shares[i])) {
-              console.log('~~~~~~~~~~~~', smasShare, dbRoom.shares[i])
-              if (dbRoom.shares[i]) {
-                let currentRow = {
-                  Bldg: dbRoom.building,
-                  Room: dbRoom.room,
-//                  'Share Number': i,
-                  '%': dbRoom.shares[i].percent,
-                  Area: dbRoom.shares[i].area,
-                  'Department Assigned': dbRoom.shares[i].assigned,
-                  'Department Using': dbRoom.shares[i].using,
-                  'Sta': dbRoom.shares[i].stations,
-                  'Room Type': dbRoom.shares[i].type,
-                  'Description': dbRoom.shares[i].description,
-                  'Internal Note': dbRoom.shares[i].note,
-                  'UPDATE TYPE': 'Changed - Current Share Entry',
-                }
-                diffs.push(currentRow)
-              } 
-              let newRow = {
-                Bldg: smasRoom.building,
-                Room: smasRoom.room,
- //               'Share Number': i,
-                '%': smasShare.percent,
-                Area: smasShare.area,
-                'Department Assigned': smasShare.assigned,
-                'Department Using': smasShare.using,
-                'Sta': smasShare.stations,
-                'Room Type': smasShare.type,
-                'Description': smasShare.description,
-                'Internal Note': smasShare.note,
-                'UPDATE TYPE': (dbRoom.shares[i]) ? 'Change - New Share Entry' : 'Addition - New Share Entry',
-              }
-              diffs.push(newRow)
-            }
-// This handles situations where the database has more shares than the new SMAS
-// file.
-          })
-          console.log(smasRoom.shares.length)
-          console.log(dbRoom.shares.length)
-          for (var i = smasRoom.shares.length; i < dbRoom.shares.length-1; i++) {
-            console.log(i)
-            console.log(dbRoom)
-            let dbShare = dbRoom.shares[i]
-            let currentRow = {
-              Bldg: dbRoom.building,
-              Room: dbRoom.room,
-//              'Share Number': i,
-              '%': dbShare.percent,
-              Area: dbShare.area,
-              'Department Assigned': dbShare.assigned,
-              'Department Using': dbShare.using,
-              'Sta': dbShare.stations,
-              'Room Type': dbShare.type,
-              'Description': dbShare.description,
-              'Internal Note': dbShare.note,
-              'UPDATE TYPE': 'Deleted - Current Share Entry',
-            }
-            diffs.push(currentRow)
-          }
-// No Room exists in the DB.  Mark it as an addition
-        } else {
-          dbRoom = {}
-          let obj = {
-            Bldg: smasRoom.building,
-            Room: smasRoom.room,
-            'Share Number': i,
-            '%': smasShare.percent,
-            Area: smasShare.area,
-            'Department Assigned': smasShare.assigned,
-            'Department Using': smasShare.using,
-            'Sta': smasShare.stations,
-            'Room Type': smasShare.type,
-            'Description': smasShare.description,
-            'Internal Note': smasShare.note,
-            'UPDATE TYPE': 'Addition - New Room Entry',
-          }
-          diffs.push(obj)
-        }
-        return shareRoomIndex++;
-      })
-    })
-  }).then(()=>{
-    let options = {
-      delimiter: ',',
-      wrap: false,
+function checkInitializationState({input, state, output}) {
+  if(state.get('app.initialized')) {
+    output.initialized()
+  } else {
+    output.uninitialized()
+  }
+}
+checkInitializationState.outputs = ['initialized','uninitialized']
+
+// Save the floor plan names to the state tree.
+function initiateSupportedFloorPlans({input, state}) {
+  input.result.forEach((filename) => {
+    // Note that the .svg files on the server are named like GRIS_1.svg and
+    // GRIS_b.svg, so we can get the capitalized building names (and lower case
+    // floors, if there is any letter in them) directly from the file names.
+    var floorplan = {
+      filename: filename,
+      building: filename.match('^(.+)_.+.svg$')[1],
+      floor: filename.match('^.+_(.+).svg$')[1],
+      svg: undefined,
     }
-    fd(csvjson.toCSV(diffs, options), 'SMAS-diff.csv')
+    state.set(`app.floorplans.${floorplan.building}.${floorplan.floor}`, floorplan)
   })
 }
-*/
+
+function getRoomsData({input, output}) {
+  let roomsFileContent = input.droppan_file_content
+  try {
+    let rooms = JSON.parse(roomsFileContent)
+    output.success({result: rooms})
+  } catch(error) {
+    output.error()
+  }
+}
+
+function readDropPanFile({input, output}) {
+  let roomsFile = input.dropzone_file[0]
+  let reader = new FileReader()
+
+  reader.onload = function(event) {
+    output.success({droppan_file_content: event.target.result})
+  };
+  reader.onerror = output.error
+
+  reader.readAsText(roomsFile)
+}
+// Use default outputs:  success and error.
+readDropPanFile.async = true
+
+// Save the floor plan names to the state tree.
+function initiateSupportedFloorPlans({input, state}) {
+  input.result.forEach((filename) => {
+    // Note that the .svg files on the server are named like GRIS_1.svg and
+    // GRIS_b.svg, so we can get the capitalized building names (and lower case
+    // floors, if there is any letter in them) directly from the file names.
+    var floorplan = {
+      filename: filename,
+      building: filename.match('^(.+)_.+.svg$')[1],
+      floor: filename.match('^.+_(.+).svg$')[1],
+      svg: undefined,
+    }
+    state.set(`app.floorplans.${floorplan.building}.${floorplan.floor}`, floorplan)
+  })
+}
+
+function wait() {
+
+}
+
+// Create the searchbar_input and viewer_state fields in the input.
+function validateInputForResetApp({input, output}) {
+  // The searchbar text can be out of sych with the URL query state. We will
+  // update it as long as the query field is set in the input, i.e. in the URL.
+  let searchbar_input = input.query || ''
+
+  // Update the viewer.state according to the in put, too.
+  let viewer_state = {
+    // Set the new state of the viewer. Essentially, we also change the main
+    // content of the viewer if the current_page is set in the input, no matter
+    // what other states have been updated to the viewer component.
+    current_page: input.current_page || 'campusmap',
+    // Note, if any of the fields below isn't set, we will get undefined from
+    // the input, and that's exactly what we want to set, so a default value
+    // isn't provided.
+    building: input.building,
+    floor: input.floor,
+    id: input.id, // Room id.
+    person: input.person,
+    query: input.query,
+    idx: input.idx
+  }
+
+  output({
+    searchbar_input: searchbar_input,
+    viewer_state: viewer_state
+  })
+}
+
+function exportRoomsMetaData({input, state, output, services}) {
+  debugger
+  fileDownload(JSON.stringify(state.get('app.rooms_meta_data.rooms')), 'rooms.json')
+}
+
+function exportSmasData({input, state, output, services}) {
+  var options = {
+    delimiter: ",",
+    wrap: false
+  }
+  console.log(state.get('app.rooms_meta_data.rooms'));
+  var smasData = csvjson.toCSV(state.get('app.rooms_meta_data.rooms'), options);
+  console.log(smasData);
+  var today = new Date();
+  var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+//  fileDownload(smasData, 'Room_List_View-'+ date + '.csv')
+}
+
+// Display input.errorMsg on both the UI and the console.
+function displayErrorOnSidebar({input, state}) {
+  state.set('sidebar.error', input.errorMsg)
+  console.error(input.errorMsg)
+}
