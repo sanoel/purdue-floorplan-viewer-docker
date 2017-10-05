@@ -1,4 +1,4 @@
-// SuggestionTable is the list of search results showing up in the Sidebar.
+// SuggestionTable is the list of search results showing up in the SearchBar.
 import React from 'react'
 import {connect} from 'cerebral-view-react'
 import styles from './styles.css'
@@ -9,7 +9,7 @@ export const MAX_NUM_SUGGESTIONS = 5
 
 export default connect({
   idx_selected_suggestion: 'viewer.state.idx',
-  searchResults: 'sidebar.search_results'
+  results: 'searchbar.results'
 }, {
   moreResultsClicked: 'viewer.searchResultClicked',
 },
@@ -17,7 +17,7 @@ export default connect({
 
     render() {
       // Generate the "more results" card if necessary.
-      let numSuggestions = Object.keys(this.props.searchResults).length
+      let numSuggestions = Object.keys(this.props.results).length
       let moreResultsCard = numSuggestions>MAX_NUM_SUGGESTIONS ? (
         <li key='more-card' className={cx('pure-menu-list')}
           onClick={()=>{this.props.moreResultsClicked({type:'cards'})}}>
@@ -30,12 +30,12 @@ export default connect({
         </li>
       ) : null
 
-      var resultsCards = this.props.searchResults.slice(0, MAX_NUM_SUGGESTIONS).map((result, idx) => {
+      var resultsCards = this.props.results.slice(0, MAX_NUM_SUGGESTIONS).map((result, idx) => {
         return <SuggestionCard idx={idx} key={'suggestion-card-'+idx}/>
       })
 
       return (
-        this.props.searchResults.length>0 ? (
+        this.props.results.length>0 ? (
           <div className={cx('pure-menu', 'wrapper', 'suggestion-table')}>
             <ul className={cx('pure-menu-list', 'list')}>
               {resultsCards}

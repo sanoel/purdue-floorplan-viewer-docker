@@ -96,6 +96,7 @@ export default connect({
               }
             )
           })
+					// Find and color highlighted building text black
         }
       }
 

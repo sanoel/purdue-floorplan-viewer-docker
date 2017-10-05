@@ -1,23 +1,15 @@
 import {
-  updateSearchBarInput,
+	setTab,
 } from './chains'
 
 export default module => {
 
   module.addState({
-    searchbar: {
-      text: '',
-    },
-    search_results: [],
-
-    // Error message. Can be shown using the action displayErrorOnSidebar.
+		tab: 0,
     error: '',
   })
 
   module.addSignals({
-    searchBarInputChanged: {
-      chain: updateSearchBarInput,
-      immediate: true
-    }
+		tabClicked: setTab,
   })
 }

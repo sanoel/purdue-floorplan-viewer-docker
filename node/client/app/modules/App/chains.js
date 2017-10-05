@@ -3,10 +3,10 @@ import Promise from 'bluebird'
 import csvjson from 'csvjson'
 import fd from 'react-file-download'
 import coeLib  from '../../../coeLib.js'
-import { updateSearchBarInput } from '../Sidebar/chains'
-import { validateLogin } from '../Login/chains'
+import { updateSearchBarInput } from '../SearchBar/chains'
 import redirectToSignal from 'cerebral-module-router/redirectToSignal'
 import fileDownload from 'react-file-download'
+import { failedAuth } from '../Login/chains'
 
 export let cancelRoomsDataImportation = [
   set('state:viewer.dropzone_hint', ''),
@@ -45,7 +45,7 @@ export let resetApp = [
   // Create the searchbar_input and viewer_state fields in the input.
   validateInputForResetApp,
   // Clear / update the search bar and the suggestion table.
-  ...updateSearchBarInput,
+//  ...updateSearchBarInput,
   // Reset the viewer states.
   copy('input:viewer_state', 'state:viewer.state')
 ]
@@ -56,7 +56,6 @@ export let initiateApp = [
     ],
     uninitialized: [
       set('state:app.initialized', true),
-      ...validateLogin,
 
       loadSvgFileNames, {
         success: [
@@ -128,18 +127,24 @@ export var computeSmasDiffs = [
   parseSmasFile, {
     success: [
       forewardConvert, 
-      getDbShares, 
-      forewardConvertDiff, {
-        success: [
-          compareShares, {
-            success: [
-              set('state:app.generating_smas_report', false),
-            ],
-            error: [],
-          },
-        ],
-        error: [],
-      },
+      getDbShares, {
+				success: [
+					forewardConvertDiff, {
+						success: [
+							compareShares, {
+								success: [
+									set('state:app.generating_smas_report', false),
+								],
+								error: [],
+								unauthorized: [...failedAuth],
+							},
+						],
+						error: [],
+					},
+				],
+				error: [],
+				unauthorized: [...failedAuth],
+			},
     ],
     error: [],
   },
@@ -246,7 +251,13 @@ function getDbShares({input, state, output, services}) {
           })
         })
       } else return null
-    })
+	  }).catch((error) => {
+			console.log(error)
+			if (error.status === 401) {
+				return output.unauthorized({})
+			}
+			return output.error({error})
+		})
   }).then(()=>{
     let diff = _.differenceWith([input.data, shares], input.data, _.isEqual)
     let options = {
@@ -256,6 +267,8 @@ function getDbShares({input, state, output, services}) {
     fd(csvjson.toCSV(shares, options), 'CurrentCoEFpvShares.csv')
   })
 }
+getDbShares.async = true
+getDbShares.outputs = ['success', 'error', 'unauthorized']
 
 function parseSmasFile({input, state, output, services}) {
   var reader = new FileReader();
@@ -341,6 +354,13 @@ function compareShares({input, state, output, services}) {
           })
         })
       } else return null
+    }).catch((err) => {
+			console.log(err)
+			if (err.status === 401) {
+				return output.unauthorized({})
+			}
+      console.log('HERE', err);
+			return output.error({})
     })
   }).then(()=>{
     let options = {
@@ -352,7 +372,7 @@ function compareShares({input, state, output, services}) {
   })
 }
 compareShares.async = true;
-compareShares.outputs = ['success', 'error']
+compareShares.outputs = ['success', 'error', 'unauthorized']
 
 // See changes for the case of generating a report
 function compareRoomShares(smas, db) {
@@ -455,7 +475,7 @@ function wait() {
 function validateInputForResetApp({input, output}) {
   // The searchbar text can be out of sych with the URL query state. We will
   // update it as long as the query field is set in the input, i.e. in the URL.
-  let searchbar_input = input.query || ''
+  //let searchbar_input = input.query || ''
 
   // Update the viewer.state according to the in put, too.
   let viewer_state = {
@@ -475,7 +495,7 @@ function validateInputForResetApp({input, output}) {
   }
 
   output({
-    searchbar_input: searchbar_input,
+//    searchbar_input: searchbar_input,
     viewer_state: viewer_state
   })
 }

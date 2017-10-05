@@ -1,6 +1,6 @@
 import {
-  validateLogin,
   updateLoginInputs,
+	logIn,
 } from './chains'
 
 export default module => {
@@ -10,8 +10,8 @@ export default module => {
   module.addState({
     // Login information.
     user: {
-      name: '',
-      password: ''
+      name: 'sam',
+      password: 'test'
     },
     is_validating: false,
     error: ''
@@ -22,7 +22,7 @@ export default module => {
       chain: updateLoginInputs,
       immediate: true
     },
-    loginConfirmed: validateLogin
+		loginSubmitted: logIn,
   })
 
 }

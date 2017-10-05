@@ -1,4 +1,5 @@
 import {copy, set, unset} from 'cerebral/operators'
+import { failedAuth } from '../Login/chains'
 
 export var removePerson = [
   deletePersonEdge, {
@@ -7,6 +8,7 @@ export var removePerson = [
       resetTable,
     ],
     error: [],
+		unauthorized: [...failedAuth],
   }
 ]
 
@@ -15,6 +17,7 @@ export var updateNewPersonText = [
   getPersonMatches, {
     success: [setMatches],
     error: [],
+		unauthorized: [...failedAuth],
   },
 ]
 
@@ -23,6 +26,7 @@ export var setPersonMatch = [
   getPersonMatches, {
     success: [setMatches],
     error: [],
+		unauthorized: [...failedAuth],
   },
 ]
 
@@ -33,8 +37,10 @@ export var addPerson = [
       putNewPerson, {
         success: [setPerson, resetTable],
         error: [],
+				unauthorized: [...failedAuth],
       },
     ],
+		unauthorized: [...failedAuth],
   },
 ]
 
@@ -70,35 +76,45 @@ function getPersonFromText({input, state, output, services}) {
   if (input.match) return output.success({person:input.match})
   return services.http.get('/person/'+input.text).then((results)=>{
     if (results.result.length > 0) return output.success({person: results.result[0]})
-    return output.error({person: results.result[0]})
-  })
+	}).catch((error) => {
+		console.log(error)
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
+	})
 }
 getPersonFromText.async = true;
-getPersonFromText.outputs = ['success', 'error'];
+getPersonFromText.outputs = ['success', 'error', 'unauthorized'];
 
 function createPersonEdge({input, state, output, services}) {
   let to = input.match._id;
   let from = input.share._id;
   return services.http.put('/edges?to='+to+'&from='+from+'&type=share-person').then((results) => {
     return output.success()
-  }).catch((error) => {
-    console.log(error);
-    return output.error({error})
-  })
+	}).catch((error) => {
+		console.log(error)
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
+	})
 }
 createPersonEdge.async = true;
-createPersonEdge.outputs = ['success', 'error'];
+createPersonEdge.outputs = ['success', 'error', 'unauthorized'];
 
 function deletePersonEdge({input, state, output, services}) {
   let from = input.share._id;
   let to = input.person._id;
-  return services.http.delete('/edges?from='+from+'&to='+to)
-  .then((results) => {
+  return services.http.delete('/edges?from='+from+'&to='+to).then((results) => {
     return output.success()
-  }).catch((error) => {
-    console.log(error);
-    return output.error({error})
-  })
+	}).catch((error) => {
+		console.log(error)
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
+	})
 }
 deletePersonEdge.async = true;
 deletePersonEdge.outputs = ['success', 'error'];
@@ -107,14 +123,17 @@ function getPersonMatches({input, state, output, services}) {
   if (input.text !== '') {
     return services.http.get('/search?text='+input.text+'&type=person').then((results) => {
       return output.success({matches: results.result.filter((match) => {return match._type === 'person'})})
-    }).catch((error) => {
-      console.log(error);
-      return output.error({error})
-    })
+		}).catch((error) => {
+			console.log(error)
+			if (error.status === 401) {
+				return output.unauthorized({})
+			}
+			return output.error({error})
+		})
   } else return output.success({matches: []})
 }
 getPersonMatches.async = true;
-getPersonMatches.outputs = ['success', 'error']
+getPersonMatches.outputs = ['success', 'error', 'unauthorized']
 
 //TODO: Replace with coeLib.js
 // Create a fulltext searchable string of an item, given an array of keys to use
@@ -134,12 +153,15 @@ function putNewPerson({input, state, output, services}) {
     _type: 'person',
   }
   person.fulltext = createFullText(person, searchablePersonAttributes)
-  return services.http.put('/person/', person)
-  .then((results)=>{
+  return services.http.put('/person/', person).then((results)=>{
     return output.success({person: Object.assign(results.result, person), to: results.result._id})
-  }).catch((error)=>{
-    return output.error({error})
-  })
+	}).catch((error) => {
+		console.log(error)
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
+	})
 }
 putNewPerson.async = true;
-putNewPerson.outputs = ['success', 'error'];
+putNewPerson.outputs = ['success', 'error', 'unauthorized'];

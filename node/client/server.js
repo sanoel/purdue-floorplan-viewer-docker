@@ -15,13 +15,18 @@ if (server_addr !== "none") {
   var db = new Database(server_addr);
   db.useDatabase(database_name)
 }
+var passport = require('passport')
+var LocalStrategy = require('passport-local').Strategy;
 var express = require('express');
 var app = express();
 var helmet = require('helmet');
 var session = require('express-session');
 var CASAuthentication = require('cas-authentication')
 var passport = require('passport')
+var session = require('express-session');
 var SamlStrategy = require('passport-saml').Strategy
+var bcrypt = require('bcrypt');
+var jwt = require('jsonwebtoken')
 
 const relativePathToFloorplans = '/img/svgFloorPlans/svgFloorPlansSim/svgoManSvgo/';
 
@@ -31,13 +36,36 @@ var putRoute = '';
 
 app.use(express.static(contentBase));
 app.use(helmet());
-//app.use(session({
-//  secret: 'super secret key',
-//  resave: false,
-//  saveUninitialized: true
-//}))
+
 
 /////////////////////////////////////////////////////////////
+// Token lookup
+function checkToken (token) {
+	return db.query(aql`
+		FOR a IN authorizations
+		RETURN {token: ${token}} 
+	`).then(cursor => cursor.next())
+	.then((result) => {
+		return true
+	}).catch((err) => {
+		return false
+	})
+}
+
+/////////////////////////////////////////////////////////////
+// Authentication middleware
+function ensureAuthenticated () {
+	return function (req, res, next) {
+		let token = req.get('access_token')
+		if (token && checkToken(token)) {
+			return next()
+		}
+		return res.sendStatus(401)
+	}
+}
+
+/////////////////////////////////////////////////////////////
+// SAML strategy
 /*
 passport.use(new SamlStrategy({
   path: 'http://localhost',
@@ -50,23 +78,118 @@ passport.use(new SamlStrategy({
 */
 
 /////////////////////////////////////////////////////////////
-//var cas = new CASAuthentication({
-//  cas_url: 'https://www.purdue.edu/apps/account/cas/login',
-//  service_url: 'https://floorplans.ecn.purdue.edu',
-//  service_url: 'http://localhost',
-//  cas_version: '3.0',
-//  renew: false,
-//})
+// Local strategy
+/*
+passport.use(new LocalStrategy(
+  (username, password, done) => {
+		console.log('username:', username, 'password:', password)
+    db.query(aql`
+				FOR doc IN users
+				FILTER doc.password == ${password}
+				FILTER doc.username == ${username}
+		    RETURN doc
+    `).then(result => result.next())
+		.then((res) => {
+			console.log(res)
+			if (res) {
+				delete res.password
+	      return done(null, res)
+			} 
+			return done(null, false)
+		}).catch((err) => {
+			console.log(err)
+			return done(null, false)
+		})
+	// Always use hashed passwords and fixed time comparison
+		bcrypt.compare(password, user.passwordHash, (err, isValid) => {
+			if (err) {
+				return done(err)
+			}
+			if (!isValid) {
+				return done(null, false)
+			}
+			return done(null, user)
+		})
+  }
+))
+*/
+
+//app.use(session({secret: "super secret floorplan stuff"}));
+//app.use(passport.initialize());
+//app.use(passport.session());
 
 /////////////////////////////////////////////////////////////
+// Serialize and Deserialize
+/*
+passport.serializeUser(function(user, done) {
+	// placeholder for custom user serialization
+	// null is for errors
+  done(null, user._id);
+});
+		
+passport.deserializeUser(function(id, done) {
+  // placeholder for custom user deserialization.
+  // maybe you are going to get the user from mongo by id?
+  // null is for errors
+	db.query(aql`
+	  RETURN DOCUMENT('users', id)
+  `).then(result => result.next())
+	.then((res) => {
+		console.log('~~~~~~~~~~', res)
+    done(null, profile)
+	}).catch((err) => {
+		console.log(err);
+		done(null, err)
+	})
+});
+*/
 
 
+
+/////////////////////////////////////////////////////////////
+// Login and logout routes
+app.post('/login', (req, res) => {
+  return db.query(aql`
+		FOR doc IN users
+		FILTER doc.password == ${req.query.password}
+		FILTER doc.username == ${req.query.username}
+	  RETURN doc
+  `).then(result => result.next())
+	.then((user) => {
+		// generate a token and create a new authorization for the user
+		if (user.username && user.password) {
+			return db.query(aql`
+				INSERT {
+					token: RANDOM_TOKEN(21),
+					username: ${user.username},
+					scopes: '' //TODO: consider specifying levels of permission
+				}	IN authorizations
+				RETURN NEW
+			`).then(cursor => cursor.next())
+			.then((auth) => {
+				return res.json({token:auth.token})
+			}).catch((err) => {
+				return res.sendStatus(401)
+			})
+		}
+		return res.sendStatus(401)
+	}).catch((error) => {
+		return res.sendStatus(401)
+	})
+})
+
+app.get('/logout', (req, res) => {
+  console.log('logging out');
+})
+
+/////////////////////////////////////////////////////////////
+// Other routes, ensuring authentication
 app.get(relativePathToFloorplans, (req, res) => {
   let floorplanNames = fs.readdirSync(path.join(contentBase, relativePathToFloorplans));
   res.send(floorplanNames);
 })
 
-app.get('/edges/', (req, res) => {
+app.get('/edges/', ensureAuthenticated(), (req, res) => {
   let edgeCollection = db.collection('edges')
   let bnd, key;
   let type = req.query.type
@@ -100,7 +223,7 @@ app.get('/edges/', (req, res) => {
   }
 })
 
-app.get('/search', (req, res) => {
+app.get('/search', ensureAuthenticated(), (req, res) => {
   let collection = db.collection('nodes')
   collection.fulltext("fulltext", 'prefix:'+req.query.text.split(' ').join(',prefix:'))
   .then((cursor) => {
@@ -111,7 +234,7 @@ app.get('/search', (req, res) => {
   })
 })
 
-app.get('/nodes', (req, res) => {
+app.get('/nodes', ensureAuthenticated(), (req, res) => {
   let collection = db.collection('nodes')
   collection.byExample({ _type: req.query.type, name: decodeURI(req.query.name) })
   .then((cursor) => {
@@ -122,7 +245,7 @@ app.get('/nodes', (req, res) => {
   })
 })
 
-app.delete('/edges', (req, res) => {
+app.delete('/edges', ensureAuthenticated(), (req, res) => {
   let collection = db.collection('nodes')
   let example = {}
   if (req.query.to) example._to = req.query.to
@@ -137,7 +260,7 @@ app.delete('/edges', (req, res) => {
   })
 })
 
-app.delete('/nodes', (req, res) => {
+app.delete('/nodes', ensureAuthenticated(), (req, res) => {
   let collection = db.collection('nodes')
   let example = {}
   if (req.query.type) example._type = req.query.type
@@ -153,7 +276,7 @@ app.delete('/nodes', (req, res) => {
   })
 })
 
-app.post('/nodes', (req, res) => {
+app.post('/nodes', ensureAuthenticated(), (req, res) => {
   let collection = db.collection('nodes')
   req.pipe(concat(function(body) {
     var body = JSON.parse(body)
@@ -166,7 +289,7 @@ app.post('/nodes', (req, res) => {
   }))
 })
 
-app.put('/nodes', (req, res) => {
+app.put('/nodes', ensureAuthenticated(), (req, res) => {
   let collection = db.collection('nodes')
   req.pipe(concat(function(body) {
     var body = JSON.parse(body)
@@ -179,7 +302,7 @@ app.put('/nodes', (req, res) => {
   }))
 })
 
-app.post('/edges', (req, res) => {
+app.post('/edges', ensureAuthenticated(), (req, res) => {
   let collection = db.collection('edges')
   collection.save({_to:req.query.to, _from: req.query.from, type:req.query.type}).then((result) => {
     res.json(result)
@@ -189,7 +312,7 @@ app.post('/edges', (req, res) => {
   })
 })
 
-app.get('/collectionById/:collection/:key', (req, res) => {
+app.get('/collectionById/:collection/:key', ensureAuthenticated(), (req, res) => {
   let collection = db.collection(req.params.collection)
   collection.byExample({_key: req.params.key}).then((cursor) => {
     res.json(cursor._result)
@@ -199,9 +322,26 @@ app.get('/collectionById/:collection/:key', (req, res) => {
   })
 })
 
-//app.get('/login', passport.authenticate)
-
-//app.get('/authenticate', passport.authenticate);
+// QUERY for s
+app.get('/stuff', ensureAuthenticated(), (req, res) => {
+	let node = 'nodes/'+req.query.name
+  let filters = Object.keys(req.query).map((key) => {
+		return `FILTER v.${key} === '${req.query[key]}'`
+	})
+	console.log('FILTERS: ', filters)
+	db.query(aql`
+		FOR v,e,p IN 0..5 
+	  OUTBOUND ${node}
+	  edges
+		${filters}
+	  RETURN DISTINCT p.vertices[1]
+	`).then((result) => {
+    return result
+	}).catch((err) => {
+    console.log(err)
+		res.send(err)
+	})
+})
 
 var server = app.listen(thePort, function () {
   var host = server.address().address

@@ -10,12 +10,12 @@ var HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = validate({
   devtool: 'eval-source-map',
-  entry: [
-    path.resolve(__dirname, 'app/main.js')
-  ],
+  entry: {
+		app: path.resolve(__dirname, 'app/main.js'),
+  },
   output: {
     path: path.resolve(__dirname, 'build/'),
-    filename: 'bundle.js',
+    filename: '[name].bundle.js',
   },
   devServer: {
     historyApiFallback: true,
@@ -37,7 +37,7 @@ module.exports = validate({
     }, {
       test: /\.css$/,
       loader: "style-loader!css-loader?modules&importLoaders=1&localIdentName=[name]_[local]_[hash:base64:5]",
-    }]
+    }] 
   },
 
   // Fix error about 'fs' module from webpack.
@@ -57,7 +57,7 @@ module.exports = validate({
     new HtmlWebpackPlugin({
       template: 'app/index.tpl.html',
       inject: 'body',
-      filename: 'index.html'
+      filename: 'index.html',
     }),
     new webpack.optimize.OccurenceOrderPlugin(),
     new webpack.HotModuleReplacementPlugin({

@@ -6,13 +6,14 @@ import styles from './styles.css'
 import { RaisedButton, FontIcon } from 'material-ui';
 
 export default connect({
-  username: 'login.profile',
+  username: 'login.user',
+	token: 'login.token',
   permission_granted: 'app.permission_granted'
 }, {
   settingsPageRequested: 'app.settingsPageRequested',
   frontPageRequested: 'app.frontPageRequested',
   logoutClicked: 'header.logoutClicked',
-  logoutClicked: 'header.loginClicked'
+  loginClicked: 'header.loginClicked'
 },
   class Header extends React.Component {
 
@@ -27,14 +28,25 @@ export default connect({
             primary={true}
             onTouchTap={() => this.props.settingsPageRequested()}
           />
+					{this.props.username ? 
           <RaisedButton 
             className={[stylesLogin['purdue-button'], styles['header-button']].join(' ')}
-            label={this.props.username ? 'Logout' : 'Login'}
+            label={'Logout'}
             labelPosition='before'
             primary={true}
-            icon={<FontIcon className={this.props.username ? "fa fa-sign-out": "fa fa-sign-in"} />}
-            onTouchTap={this.props.username ? (evt) => this.props.logoutClicked(evt) : (evt) => this.props.loginClicked(evt)}
+            icon={<FontIcon className={"fa fa-sign-out"} />}
+            onTouchTap={() => this.props.logoutClicked()}
           />
+					:
+          <RaisedButton 
+            className={[stylesLogin['purdue-button'], styles['header-button']].join(' ')}
+            label={'Login'}
+            labelPosition='before'
+            primary={true}
+            icon={<FontIcon className={"fa fa-sign-in"} />}
+            onTouchTap={() => this.props.loginClicked()}
+          />
+					}
         </div>
       )
 

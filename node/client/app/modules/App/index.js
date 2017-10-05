@@ -52,6 +52,15 @@ export default module => {
     importing_rooms: false,
     exporting_rooms: false,
     generating_smas_report: false,
+		buildings: [
+			'WANG',
+			'ARMS',
+			'HAMP',
+			'ME',
+			'MSEE',
+			'EE',
+			'GRIS',
+		],
   })
 
   module.addSignals({

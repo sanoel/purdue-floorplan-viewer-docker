@@ -1,5 +1,6 @@
 import { set, copy } from 'cerebral/operators'
 import { setFrontPage } from '../App/chains'
+import { failedAuth } from '../Login/chains';
 import Promise from 'bluebird'
 
 export let setRoomPage = [
@@ -16,11 +17,14 @@ export let setRoomPage = [
               copy('input:shares', 'state:roominfo.room.shares'), 
               ...setFrontPage,
             ],
+						unauthorized: [...failedAuth],
           },
         ],
+				unauthorized: [...failedAuth],
       },
     ],
     error: [],
+    unauthorized: [...failedAuth],
   },
 ]
 
@@ -41,10 +45,12 @@ export let setPersonPage = [
           copy('input:shares', 'state:personinfo.shares'), 
         ],
         error: [],
+				unauthorized: [...failedAuth],
       },
       ...setFrontPage,
     ],
     error: [],
+		unauthorized: [...failedAuth],
   },
 ]
 
@@ -75,9 +81,11 @@ export let setFloorplanPage = [
           ...setFrontPage,
         ],
         error: [],
+				unauthorized: [...failedAuth],
       },
     ],
     error: [],
+		unauthorized: [...failedAuth],
   },
 ]
 
@@ -91,9 +99,11 @@ export let setBuildingPage = [
           ...setFrontPage
         ],
         error: [],
+				unauthorized: [...failedAuth],
       }
     ],
     error: [],
+		unauthorized: [...failedAuth],
   },
 ]
 
@@ -141,72 +151,94 @@ export let setRoomsOnFloorplansPage = [
 ]
 
 function getBuilding({input, services, output}) {
-  services.http.get('/nodes?type=building&name='+input.building).then((results) => {
+  return services.http.get('/nodes?type=building&name='+input.building).then((results) => {
     output.success({building:results.result[0]})
-  }).catch((err) => {
-    console.log(err);
-    output.error({message:err})
+  }).catch((error) => {
+    console.log(error);
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
   })
 }
-getBuilding.outputs=['success', 'error']
+getBuilding.outputs=['success', 'error', 'unauthorized']
 getBuilding.async = true;
 
 function getFloorplansFromBuilding({input, services, output}) {
-  services.http.get('/edges?type=floorplan&from='+input.building._id).then((results) => {
+  return services.http.get('/edges?type=floorplan&from='+input.building._id).then((results) => {
     output.success({floorplans:results.result})
-  }).catch((err) => {
-    console.log(err);
-    output.error({message:err})
+  }).catch((error) => {
+    console.log(error);
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
   })
 }
-getFloorplansFromBuilding.outputs=['success', 'error']
+getFloorplansFromBuilding.outputs=['success', 'error', 'unauthorized']
 getFloorplansFromBuilding.async = true;
 
 
 // Update floorplans.floorplan_to_show. 
 export function getFloorplan({input, state, services, output}) {
-  services.http.get('/nodes?type=floorplan&name='+input.floorplan).then((results) => {
+  return services.http.get('/nodes?type=floorplan&name='+input.floorplan).then((results) => {
     output.success({floorplan:results.result[0]})
-  }).catch((err) => {
-    output.error({message:err})
+  }).catch((error) => {
+    console.log(error);
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
   })
 }
-getFloorplan.outputs=['success', 'error']
+getFloorplan.outputs=['success', 'error', 'unauthorized']
 getFloorplan.async = true;
 
 export function getRoomsFromFloorplan({input, state, services, output}) {
-  services.http.get('/edges?type=room&from='+input.floorplan._id).then((results) => {
+  return services.http.get('/edges?type=room&from='+input.floorplan._id).then((results) => {
     var rooms = {}; 
     results.result.forEach((res) => {
       rooms[res.name] = res;
     })
     output.success({rooms})
-  }).catch((err) => {
-    output.error({message:err})
+  }).catch((error) => {
+    console.log(error);
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
   })
 }
-getRoomsFromFloorplan.outputs=['success', 'error']
+getRoomsFromFloorplan.outputs=['success', 'error', 'unauthorized']
 getRoomsFromFloorplan.async = true;
 
 export function getPerson({input, state, services, output}) {
   return services.http.get('nodes/?type=person&name='+encodeURIComponent(input.person)).then((results) => {
     if (results.result.length === 1) return output.success({person:results.result[0]})
     return output.error({message: 'either multiple or zero persons found'})
-  }).catch((err) => {
-    output.error({message:err})
+  }).catch((error) => {
+    console.log(error);
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
   })
 }
-getPerson.outputs=['success', 'error']
+getPerson.outputs=['success', 'error', 'unauthorized']
 getPerson.async = true;
 
 export function getSharesFromPerson({input, services, output}) {
-  services.http.get('edges?type=share&to='+input.person._id).then((results) => {
-    output.success({shares:results.result})
-  }).catch((err) => {
-    output.error({message:err})
+  return services.http.get('edges?type=share&to='+input.person._id).then((results) => {
+    return output.success({shares:results.result})
+  }).catch((error) => {
+    console.log(error);
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
   })
 }
-getSharesFromPerson.outputs=['success', 'error']
+getSharesFromPerson.outputs=['success', 'error', 'unauthorized']
 getSharesFromPerson.async = true;
 
 /*
@@ -229,10 +261,13 @@ export function getRoom({input, state, services, output}) {
     return output.error({message: 'either multiple or zero rooms found'})
   }).catch((err) => {
     console.log(err)
+		if (err.status === 401) {
+			return output.unauthorized({})
+		}
     return output.error({message:err})
   })
 }
-getRoom.outputs=['success', 'error']
+getRoom.outputs=['success', 'error', 'unauthorized']
 getRoom.async = true;
 
 export function getSharesFromRoom({input, services, output}) {
@@ -240,10 +275,13 @@ export function getSharesFromRoom({input, services, output}) {
     return output.success({shares: results.result})
   }).catch((err) => {
     console.log(err)
+		if (err.status === 401) {
+			return output.unauthorized({})
+		}
     return output.error({message:err})
   })
 }
-getSharesFromRoom.outputs=['success', 'error']
+getSharesFromRoom.outputs=['success', 'error', 'unauthorized']
 getSharesFromRoom.async = true;
 
 export function getPersonsFromShares({input, services, output}) {
@@ -256,15 +294,18 @@ export function getPersonsFromShares({input, services, output}) {
         shares[share._key].persons[person._key] = person;
         return true;
       })
-    }).catch((err) => {
-      console.log(err)
-      return output.error({message:err})
-    })
+	  }).catch((err) => {
+			console.log(err)
+			if (err.status === 401) {
+				return output.unauthorized({})
+			}
+			return output.error({message:err})
+		})
   }).then(() => {
     return output.success({shares})
   })
 }
-getPersonsFromShares.outputs=['success', 'error']
+getPersonsFromShares.outputs=['success', 'error', 'unauthorized']
 getPersonsFromShares.async = true;
 
 export function setRoomAttributes({input, state}) {

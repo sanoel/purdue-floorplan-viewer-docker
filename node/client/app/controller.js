@@ -12,7 +12,8 @@ import Header from './modules/Header'
 import Viewer from './modules/Viewer'
 
 import Sidebar from './modules/Sidebar'
-import FilterGroup from './modules/FilterGroup'
+import SearchBar from './modules/SearchBar'
+import Filters from './modules/Filters'
 import Cards from './modules/Cards'
 import CampusMap from './modules/CampusMap'
 import FloorPlans from './modules/FloorPlans'
@@ -55,8 +56,9 @@ controller.addModules({
   login: Login,
   viewer: Viewer,
   sidebar: Sidebar,
+  searchbar: SearchBar,
   // Filters already set. Built up by element component Filter.
-  filtergroup: FilterGroup,
+  filters: Filters,
   cards: Cards,
   campusmap: CampusMap,
 
@@ -80,7 +82,6 @@ controller.addModules({
     '/room/:room': 'viewer.roomPageRequested',
     '/query/:query': 'viewer.cardsPageRequested',
     '/settings': 'app.settingsPageRequested',
-//    '/floorplan/:floor': 'viewer.floorplanPageRequested',
     '/*': 'app.notFoundPageOpened'
   }, {
     onlyHash: true, // use only hash part of url for matching

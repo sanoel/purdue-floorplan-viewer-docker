@@ -1,4 +1,4 @@
-// SuggestionTable is the list of search results showing up in the Sidebar.
+// SuggestionTable is the list of search results showing up in the SearchBar.
 import React from 'react'
 import {connect} from 'cerebral-view-react'
 import styles from './styles.css'
@@ -16,7 +16,7 @@ export const MAX_NUM_SUGGESTIONS = 5
 
 export default connect(props => ({
   idx_selected_suggestion: 'viewer.state.idx',
-  card: `sidebar.search_results.${props.idx}`,
+  card: `searchbar.results.${props.idx}`,
 }), {
   searchResultClicked: 'viewer.searchResultClicked',
 },

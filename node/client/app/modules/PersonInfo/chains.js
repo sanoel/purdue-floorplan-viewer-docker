@@ -1,5 +1,6 @@
 import {copy, set, toggle} from 'cerebral/operators'
 import { getRoomsFromPerson, getPersonsFromPerson } from '../Viewer/chains'
+import { failedAuth } from '../Login/chains'
 
 export var toggleEditMode = [
   toggle('state:personinfo.editing'),
@@ -10,6 +11,7 @@ export var updateNewRoomText = [
   getRoomMatches, {
     success: [copy('input:matches', 'state:personinfo.new_room.matches')],
     error: [],
+		unauthorized: [...failedAuth], 
   },
 ]
 
@@ -42,6 +44,7 @@ export var addRoom = [
       }
     ],
     error: [],
+		unauthorized: [...failedAuth], 
   }
 ]
 
@@ -56,6 +59,7 @@ export var addPerson = [
       }
     ],
     error: [],
+		unauthorized: [...failedAuth], 
   }
 ]
 
@@ -70,6 +74,7 @@ export var deletePerson = [
       }
     ],
     error: [],
+		unauthorized: [...failedAuth], 
   }
 ]
 
@@ -78,7 +83,8 @@ export var setDepartment = [
   copy('state:personinfo.person', 'output:person'),
   updatePerson, {
     success: [],
-    error: []
+    error: [],
+		unauthorized: [...failedAuth],
   }
 ]
 
@@ -87,7 +93,8 @@ export var setStatus = [
   copy('state:personinfo.person', 'output:person'),
   updatePerson, {
     success: [],
-    error: []
+    error: [],
+		unauthorized: [...failedAuth],
   }
 ]
 
@@ -103,6 +110,7 @@ export var doneEditingPerson = [
   updatePerson, {
     success: [],
     error: [],
+		unauthorized: [...failedAuth],
   }
 ]
 
@@ -111,18 +119,19 @@ function updatePerson({input, state, output, services}) {
   var body = {example:{_id:input.person._id}, newValue: input.person}
   return services.http.put('updatePerson/', body).then((results) => {
     return output.success()
-  }).catch((error) =>{
+  }).catch((error) => {
     console.log(error);
-    return output.error({error})
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
   })
-
   console.log('updating assigned rooms for: ', person)
   person.rooms.forEach((room) => {
-
   })
 }
 updatePerson.async = true;
-updatePerson.outputs = ['success', 'error']
+updatePerson.outputs = ['success', 'error', 'unauthorized']
 
 function createSupervisorPersonEdge({input, state, output, services}) {
   let persons = state.get('personinfo.persons');
@@ -134,11 +143,14 @@ function createSupervisorPersonEdge({input, state, output, services}) {
     output.success()
   }).catch((error) => {
     console.log(error);
-    output.error({error})
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
   })
 }
 createSupervisorPersonEdge.async = true;
-createSupervisorPersonEdge.outputs = ['success', 'error']
+createSupervisorPersonEdge.outputs = ['success', 'error', 'unauthorized']
 
 function createRoomPersonEdge({input, state, output, services}) {
   let rooms = state.get('personinfo.rooms');
@@ -150,11 +162,14 @@ function createRoomPersonEdge({input, state, output, services}) {
     output.success()
   }).catch((error) => {
     console.log(error);
-    output.error({error})
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
   })
 }
 createRoomPersonEdge.async = true;
-createRoomPersonEdge.outputs = ['success', 'error'];
+createRoomPersonEdge.outputs = ['success', 'error', 'unauthorized'];
 
 
 function deleteRoomPersonEdge({input, state, output, services}) {
@@ -163,36 +178,43 @@ function deleteRoomPersonEdge({input, state, output, services}) {
     output.success()
   }).catch((error) => {
     console.log(error);
-    output.error({error})
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
   })
 }
 deleteRoomPersonEdge.async = true;
-deleteRoomPersonEdge.outputs = ['success', 'error'];
+deleteRoomPersonEdge.outputs = ['success', 'error', 'unauthorized'];
 
 function getRoomMatches({input, state, output, services}) {
   if (input.text !== '') {
     return services.http.get('searchRooms/'+ input.text).then((results) => {
       output.success({matches: results.result.slice(0, 10)})
-    }).catch((error) => {
-      console.log(error);
-      output.error({error})
-    })
+		}).catch((error) => {
+			console.log(error);
+			if (error.status === 401) {
+				return output.unauthorized({})
+			}
+			return output.error({error})
+		})
   } else output.success({matches: []})
 }
 getRoomMatches.async = true;
-getRoomMatches.outputs = ['success', 'error']
+getRoomMatches.outputs = ['success', 'error', 'unauthorized']
 
 function getPersonMatches({input, state, output, services}) {
   if (input.text !== '') {
     return services.http.get('searchPersons/'+ input.text).then((results) => {
       output.success({matches: results.result.slice(0, 10)})
-    }).catch((error) => {
-      console.log(error);
-      output.error({error})
-    })
+		}).catch((error) => {
+			console.log(error);
+			if (error.status === 401) {
+				return output.unauthorized({})
+			}
+			return output.error({error})
+		})
   } else output.success({matches: []})
 }
 getPersonMatches.async = true;
-getPersonMatches.outputs = ['success', 'error']
-
-
+getPersonMatches.outputs = ['success', 'error', 'unauthorized']

@@ -8,11 +8,11 @@ var ExtractTextPlugin = require('extract-text-webpack-plugin');
 var StatsPlugin = require('stats-webpack-plugin');
 var CopyWebpackPlugin = require('copy-webpack-plugin');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
-
 module.exports = validate({
-  entry: [
-    path.resolve(__dirname, 'app/main.js')
-  ],
+  entry: {
+		app: path.resolve(__dirname, 'app/main.js'),
+		login: path.resolve(__dirname, 'app/login.js')
+  },
   output: {
     path: path.resolve(__dirname, 'build'),
     filename: '[name]-[hash].min.js',
@@ -49,7 +49,8 @@ module.exports = validate({
     new HtmlWebpackPlugin({
       template: 'app/index.tpl.html',
       inject: 'body',
-      filename: 'index.html'
+      filename: 'index.html',
+			chunks: ['app']
     }),
     new webpack.optimize.OccurenceOrderPlugin(),
     new ExtractTextPlugin('[name]-[hash].min.css'),

@@ -6,5 +6,4 @@ export default module => {
     logoutClicked: logout,
     loginClicked: login,
   })
-
 }

@@ -13,16 +13,18 @@ export default connect({
 
   // For locking the input boxes while validating the information.
   is_validating: 'login.is_validating',
-
   // Results
   permission_granted: 'app.permission_granted',
   error: 'login.error'
+}, {
+  loginSubmitted: `login.loginSubmitted`,
+	loginInputsChanged: `login.loginInputsChanged`,
 },
   class Login extends React.Component {
 
     // Update the value of input texts as the user types.
     onLoginInputsChange(event) {
-      this.props.signals.login.loginInputsChanged({
+      this.props.loginInputsChanged({
         id: event.target.id,
         value: event.target.value
       })
@@ -31,7 +33,7 @@ export default connect({
     // Login confirmation.
     onLoginFormSubmit(event) {
       event.preventDefault()
-      this.props.signals.login.loginConfirmed()
+      this.props.loginSubmitted({username:this.props.username, password: this.props.password})
     }
 
     render() {

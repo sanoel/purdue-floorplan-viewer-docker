@@ -1,5 +1,6 @@
-import { copy, set, unset, toggle, when } from 'cerebral/operators'
-import Promise from 'bluebird'
+import { copy, set, unset, toggle, when } from 'cerebral/operators';
+import { failedAuth } from '../Login/chains';
+import Promise from 'bluebird';
 
 export var cancelAttributeDialog = [
   copy('state:roominfo.room.attributes', 'state:roominfo.attribute_dialog.attributes'), 
@@ -12,6 +13,7 @@ export var submitAttributeDialog = [
   putRoomAttributes, {
     success: [],
     error: [],
+		unauthorized: [...failedAuth],
   },
 ]
 
@@ -38,6 +40,7 @@ export var updateNewPersonText = [
   getPersonMatches, {
     success: [setMatches],
     error: [],
+		unauthorized: [...failedAuth],
   },
 ]
 
@@ -46,6 +49,7 @@ export var setPersonMatch = [
   getPersonMatches, {
     success: [setMatches],
     error: [],
+		unauthorized: [...failedAuth],
   },
 ]
 
@@ -58,8 +62,10 @@ export var addPerson = [
       putNewPerson, {
         success: [setPerson, resetTable],
         error: [],
+				unauthorized: [...failedAuth],
       },
     ],
+		unauthorized: [...failedAuth],
   },
 ]
 
@@ -106,6 +112,7 @@ export var removeShare = [
       unsetShare,
     ],
     error: [],
+		unauthorized: [...failedAuth],
   },
 ]
 
@@ -123,6 +130,7 @@ export var cancelDialog = [
           unsetShare,
         ],
         error: [],
+				unauthorized: [...failedAuth],
       },
     ],
     false: [
@@ -143,6 +151,7 @@ export var addShare = [
       copyShareToRoom,
     ],
     error: [],
+		unauthorized: [...failedAuth],
   }
 ]
 
@@ -154,6 +163,7 @@ export var submitDialog = [
       copyShareToRoom,
     ],
     error: [],
+		unauthorized: [...failedAuth],
   },
   set('state:roominfo.share_dialog.new_share', false)
 ]
@@ -170,6 +180,7 @@ export var doneEditingRoom = [
   updateRoom, {
     success: [],
     error: [],
+		unauthorized: [...failedAuth],
   },
 ]
 
@@ -221,13 +232,16 @@ function deleteShare({input, state, services, output}) {
       console.log(error);
       return output.error({error})
     })
-  }).catch((error) =>{
+  }).catch((error) => {
     console.log(error);
-    return output.error({error})
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
   })
 }
 deleteShare.async = true;
-deleteShare.outputs = ['success', 'error']
+deleteShare.outputs = ['success', 'error', 'unauthorized']
 
 function updateShare({input, state, services, output}) {
   let editShare = state.get('roominfo.share_dialog.share');
@@ -266,10 +280,16 @@ function updateShare({input, state, services, output}) {
   }).then((res) => { 
     console.log('RETURNING OUTPUT')
     return output.success({})
+  }).catch((error) => {
+    console.log(error);
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
   })
 }
 updateShare.async = true;
-updateShare.outputs = ['success', 'error']
+updateShare.outputs = ['success', 'error', 'unauthorized']
 
 function revertShare({input, state}) {
   let shareKey = state.get('roominfo.share_dialog.share._key') 
@@ -321,12 +341,15 @@ function addTempShare({input, state, services, output}) {
       return output.error({error})
     })
   }).catch((error) =>{
-    console.log(error);
+		console.log(error)
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
     return output.error({error})
   })
 }
 addTempShare.async = true;
-addTempShare.outputs = ['success', 'error'];
+addTempShare.outputs = ['success', 'error', 'unauthorized'];
 
 function setShareRoomType({input, state}) {
   state.set(`roominfo.share_dialog.share.type`, input.type)
@@ -366,11 +389,14 @@ function updateRoom({input, state, output, services}) {
     return output.success()
   }).catch((error) =>{
     console.log(error);
-    return output.error({error})
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
   })
 }
 updateRoom.async = true;
-updateRoom.outputs = ['success', 'error']
+updateRoom.outputs = ['success', 'error', 'unauthorized']
 
 /////////////////////////////////////////////////////////////////
 ///////////////////PersonTable-related actions///////////////////
@@ -406,10 +432,16 @@ function getPersonFromText({input, state, output, services}) {
   return services.http.get('/nodes?name='+input.text).then((results)=>{
     if (results.result.length > 0) return output.success({person: results.result[0]})
     return output.error({person: results.result[0]})
+  }).catch((error) => {
+    console.log(error);
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
   })
 }
 getPersonFromText.async = true;
-getPersonFromText.outputs = ['success', 'error'];
+getPersonFromText.outputs = ['success', 'error', 'unauthorized'];
 
 function createPersonEdge({input, state, output, services}) {
   let to = input.match._id;
@@ -418,17 +450,19 @@ function createPersonEdge({input, state, output, services}) {
     return output.success()
   }).catch((error) => {
     console.log(error);
-    return output.error({error})
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
   })
 }
 createPersonEdge.async = true;
-createPersonEdge.outputs = ['success', 'error'];
+createPersonEdge.outputs = ['success', 'error', 'unauthorized'];
 
 function deletePersonEdge({input, state, output, services}) {
   let from = input.share._id;
   let to = input.person._id;
-  return services.http.delete('/edges?from='+from+'&to='+to)
-  .then((results) => {
+  return services.http.delete('/edges?from='+from+'&to='+to).then((results) => {
     return output.success()
   }).catch((error) => {
     console.log(error);
@@ -436,7 +470,7 @@ function deletePersonEdge({input, state, output, services}) {
   })
 }
 deletePersonEdge.async = true;
-deletePersonEdge.outputs = ['success', 'error'];
+deletePersonEdge.outputs = ['success', 'error', 'unauthorized'];
 
 function getPersonMatches({input, state, output, services}) {
   if (input.text !== '') {
@@ -449,7 +483,7 @@ function getPersonMatches({input, state, output, services}) {
   } else return output.success({matches: []})
 }
 getPersonMatches.async = true;
-getPersonMatches.outputs = ['success', 'error']
+getPersonMatches.outputs = ['success', 'error', 'unauthorized']
 
 //TODO: Replace with coeLib.js
 // Create a fulltext searchable string of an item, given an array of keys to use
@@ -469,16 +503,19 @@ function putNewPerson({input, state, output, services}) {
     _type: 'person',
   }
   person.fulltext = createFullText(person, searchablePersonAttributes)
-  return services.http.post('/nodes', person).then((results)=>{
+  return services.http.post('/nodes', person).then((results)=> {
     console.log(results)
     return output.success({person: Object.assign(results.result, person), to: results.result._id})
-  }).catch((error)=>{
-    console.log(error)
-    return output.error({error})
+  }).catch((error) => {
+    console.log(error);
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
   })
 }
 putNewPerson.async = true;
-putNewPerson.outputs = ['success', 'error'];
+putNewPerson.outputs = ['success', 'error', 'unauthorized'];
 
 ////////////////// Attribute Dialog //////////////////////////
 
@@ -507,9 +544,15 @@ function putRoomAttributes({input, state, services, output}) {
   let room = state.get('roominfo.room')
   return services.http.put('/nodes?id='+room._id, {attributes: room.attributes}).then((results) => {
     return output.success({})
+  }).catch((error) => {
+    console.log(error);
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
   })
 }
 putRoomAttributes.async = true
-putRoomAttributes.outputs = ['success', 'error']
+putRoomAttributes.outputs = ['success', 'error', 'unauthorized']
 
 
