@@ -1,4 +1,5 @@
 import {set, unset, copy, when } from 'cerebral/operators';
+import md5 from 'md5'
 
 export let logIn = [
   postLogin, {
@@ -47,7 +48,7 @@ function redirectToUrl({input, state, services, output}) {
 }
 
 function postLogin({input, state, services, output}) {
-  return services.http.post(`/login?username=${input.username}&password=${input.password}`).then((response) => {
+  return services.http.post(`/login?username=${input.username}&password=${md5(input.password)}`).then((response) => {
 		if (response.result.token) {
 			return output.success({token: response.result.token})
 		} else {

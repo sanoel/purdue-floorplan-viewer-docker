@@ -76,12 +76,22 @@ function getSmasRoomsShares(data) {
   let rooms = {};
   let shares = {};
   return Promise.each(data, function(row, i) {
-    let name = row['Bldg']+' '+row['Room'];
+    let roomname;
+		let isLetter = /[a-z]/i.test(row['Room'].charAt(row['Room'].length-1));
+		// Handle ground floor's ambiguous room numbering
+		if (row['Room'].length === 1) {
+	    roomname = '00'+row['Room'];
+		}	else if (row['Room'].length === 2) {
+	    roomname = isLetter ? '00'+row['Room'] : '0'+row['Room'];
+		}	else if (row['Room'].length === 3) {
+	    roomname = isLetter ? '0'+row['Room'] : row['Room'];
+		}
+		let name = row['Bldg']+' '+roomname;
     rooms[name] = rooms[name] || {
       building: row['Bldg'],
-      room: row['Room'],
-      floor: row['Room'].charAt(0),
-      name: row['Bldg'] + ' ' + row['Room'],
+      room: roomname,
+      floor: roomname.charAt(0) === '0' ? 'G' : roomname.charAt(0),
+      name: name,
       area: '0',
       date: row['date'] || Date.now(),
       _type: 'room',
@@ -93,7 +103,7 @@ function getSmasRoomsShares(data) {
       share: row['Share Number'],
       building: rooms[name].building,
       floor: rooms[name].floor,
-      room: name,
+      room: roomname,
       name: share,
       assigned: row['Department Assigned'],
       using: row['Department Using'],

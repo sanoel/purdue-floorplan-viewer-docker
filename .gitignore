@@ -5,3 +5,6 @@ node_modules/
 resources/
 *.swp
 *.DS_Store
+node/client/generatePasswords.js
+node/client/users.csv
+node/client/passwords.csv
