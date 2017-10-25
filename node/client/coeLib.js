@@ -93,13 +93,14 @@ function getSmasRoomsShares(data) {
       floor: roomname.charAt(0) === '0' ? 'G' : roomname.charAt(0),
       name: name,
       area: '0',
-      date: row['date'] || Date.now(),
+      createdDate: row['date'] || Date.now(),
       _type: 'room',
       smas: {},
     }
     rooms[name].area = (parseInt(rooms[name].area) + parseInt(row['Area'])).toString()
     let share = name + '-'+row['Share Number']
     shares[share] = {
+			createdDate: Date.now(),
       share: row['Share Number'],
       building: rooms[name].building,
       floor: rooms[name].floor,
@@ -145,6 +146,7 @@ function getSmasPeople(smasData, smasRoomTypesWithPeople) {
         smasPersons[name] = {
           name,
     //      dept: row['Department Using'],
+					createdDate: Date.now(),
           _type: 'person',
         }
         smasPersons[name].fulltext = createFullText(smasPersons[name], searchablePeopleAttributes)

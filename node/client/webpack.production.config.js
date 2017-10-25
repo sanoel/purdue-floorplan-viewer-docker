@@ -10,8 +10,7 @@ var CopyWebpackPlugin = require('copy-webpack-plugin');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 module.exports = validate({
   entry: {
-		app: path.resolve(__dirname, 'app/main.js'),
-		login: path.resolve(__dirname, 'app/login.js')
+		app: path.resolve(__dirname, 'app/main.js')
   },
   output: {
     path: path.resolve(__dirname, 'build'),

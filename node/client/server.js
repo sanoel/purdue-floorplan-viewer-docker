@@ -15,18 +15,9 @@ if (server_addr !== "none") {
   var db = new Database(server_addr);
   db.useDatabase(database_name)
 }
-var passport = require('passport')
-var LocalStrategy = require('passport-local').Strategy;
 var express = require('express');
 var app = express();
 var helmet = require('helmet');
-var session = require('express-session');
-var CASAuthentication = require('cas-authentication')
-var passport = require('passport')
-var session = require('express-session');
-var SamlStrategy = require('passport-saml').Strategy
-var bcrypt = require('bcrypt');
-var jwt = require('jsonwebtoken')
 
 const relativePathToFloorplans = '/img/svgFloorPlans/svgFloorPlansSim/svgoManSvgo/';
 
@@ -47,6 +38,19 @@ function checkToken (token) {
 	`).then(cursor => cursor.next())
 	.then((result) => {
 		return true
+	}).catch((err) => {
+		return false
+	})
+}
+
+function getUserFromToken (token) {
+	return db.query(aql`
+		FOR a IN authorizations
+		FILTER a.token == ${token}
+		RETURN a.username 
+	`).then(cursor => cursor.next())
+	.then((result) => {
+		return result 
 	}).catch((err) => {
 		return false
 	})
@@ -280,24 +284,33 @@ app.post('/nodes', ensureAuthenticated(), (req, res) => {
   let collection = db.collection('nodes')
   req.pipe(concat(function(body) {
     var body = JSON.parse(body)
-    collection.save(body).then((result)=>{
-      res.json(result)
-    }).catch((err)=>{
-      console.log(err)
-      res.send(err)
-    })
+		getUserFromToken(req.get('access_token')).then((username) => {
+			body.createdDate = Date.now();
+			body.modifiedBy = username;
+    	collection.save(body).then((result)=>{
+      	res.json(result)
+    	}).catch((err)=>{
+      	console.log(err)
+      	res.send(err)
+    	})
+   	})
   }))
 })
 
 app.put('/nodes', ensureAuthenticated(), (req, res) => {
   let collection = db.collection('nodes')
   req.pipe(concat(function(body) {
-    var body = JSON.parse(body)
-    collection.updateByExample({_id: req.query.id}, body).then((result)=>{
-      res.json(result)
-    }).catch((err)=>{
-      console.log(err)
-      res.send(err)
+		getUserFromToken(req.get('access_token')).then((username) => {
+			console.log('2', username)
+    	var body = JSON.parse(body)
+			body.modifiedDate = Date.now();
+			body.modifiedBy = username;
+    	collection.updateByExample({_id: req.query.id}, body).then((result)=>{
+      	res.json(result)
+    	}).catch((err)=>{
+      	console.log(err)
+      	res.send(err)
+    	})
     })
   }))
 })

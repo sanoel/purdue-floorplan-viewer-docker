@@ -17,6 +17,7 @@ export default connect({
   dropzone_hint: 'viewer.dropzone_hint',
   app_ready: 'app.ready',
   loading: 'app.generating_smas_report',
+  error: 'settings.error',
 }, {
   importRooms: 'app.roomsDataImportationRequested',
   exportRoomsJson: 'app.roomsDataExportationRequested',
@@ -47,9 +48,10 @@ export default connect({
               <hr/>
               <Dropzone 
                 className={cx('import-room-data-dropzone')}
-                multiple={false}
-                onDrop={ (filelist, evt)=>this.props.smasFileDropped({filelist, evt}) } >
-                <div>{this.props.dropzone_hint}</div>
+                multiple={true}
+		accept='text/csv'
+                onDrop={ (accepted, rejected)=>this.props.smasFileDropped({accepted, rejected}) } >
+                <div>{this.props.error ? this.props.error : this.props.dropzone_hint}</div>
               </Dropzone>
             </div>
 
