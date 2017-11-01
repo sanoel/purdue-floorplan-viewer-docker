@@ -26,6 +26,15 @@ COPY ./entrypoint.sh /entrypoint.sh
 
 RUN chmod u+x /entrypoint.sh
 
+##############################################################################
+# install some oracle junk required for the node module oracledb
+COPY ./prepOracledbLib.sh /prepOracledbLib.sh
+COPY ./instantclient-basic-linux.x64-12.2.0.1.0.zip /instantclient-basic-linux.x64-12.2.0.1.0.zip
+COPY ./instantclient-sdk-linux.x64-12.2.0.1.0.zip /instantclient-sdk-linux.x64-12.2.0.1.0.zip
+RUN chmod u+x /prepOracledbLib.sh
+RUN /prepOracledbLib.sh
+ENV LD_LIBRARY_PATH=/opt/oracle/instantclient:$LD_LIBRARY_PATH
+
 WORKDIR "/code"
 CMD /entrypoint.sh
 

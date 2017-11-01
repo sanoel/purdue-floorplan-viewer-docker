@@ -8,6 +8,7 @@ var thePort = isDeveloping ? 3000 : process.env.PORT;
 var contentBase = path.resolve(__dirname, './build');
 var server_addr = process.env.ARANGO_SERVER ? process.env.ARANGO_SERVER : "http://localhost:8529";
 var ignore = console.log("Using DB-Server " + server_addr);
+var oracledb = require('oracledb');
 var Database = require("arangojs");
 var aql = require("arangojs").aql;
 var database_name = 'floorplan-viewer'
@@ -27,6 +28,26 @@ var putRoute = '';
 
 app.use(express.static(contentBase));
 app.use(helmet());
+
+/////////////////////////////////////////////////////////////
+// Purdue SMAS SQL information
+var config = {
+  user: 'collengr',
+  password: 'F30_r4P{pRf6',
+  connectString: 'lpvdbaopr07.itap.purdue.edu:1522/smas.itap.purdue.edu',
+//    externalAuth: false,                                                         
+}
+oracledb.outFormat = oracledb.OBJECT;
+oracledb.maxRows = 100000;
+let connection;
+oracledb.getConnection(config, (err, conn) => {
+  if (err) {
+    console.log(err.message);
+    return;
+  }
+  connection = conn;
+  console.log('Connection was successful!');
+})
 
 
 /////////////////////////////////////////////////////////////
@@ -349,11 +370,21 @@ app.get('/stuff', ensureAuthenticated(), (req, res) => {
 		${filters}
 	  RETURN DISTINCT p.vertices[1]
 	`).then((result) => {
-    return result
+		res.json(result)
 	}).catch((err) => {
     console.log(err)
 		res.send(err)
 	})
+})
+
+app.get('/smas', ensureAuthenticated(), (req, res) => {
+  connection.execute(
+    `SELECT TOTAL_AREA,BUILDING_ABBREVIATION,ROOM_ID,ROOM_NUMBER,SHARE_NUMBER,SHARE_ID,SHARE_PERCENT,SHARE_AREA,STATIONS,DESCRIPTION,ROOM_CLASSIFICATION,ASSIGNED_DEPT_ABBREVIATION,USING_DEPT_ABBREVIATION from OSIRIS.ROOM_CURRENT WHERE BUILDING_ABBREVIATION IN ('ARMS', 'GRIS', 'HAMP', 'ME', 'MSEE', 'WANG', 'EE') ORDER BY BUILDING_ABBREVIATION `,
+    (err, result) => {
+      if (err) { console.error(err.message); return; }                         
+		res.json(result);
+    }
+  );
 })
 
 var server = app.listen(thePort, function () {

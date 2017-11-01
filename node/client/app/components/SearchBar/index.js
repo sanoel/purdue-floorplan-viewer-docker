@@ -26,7 +26,7 @@ export default connect({
       evt.preventDefault()
       // Submit the result and update the URL using the signal defined for the
       // router.
-      if(this.props.text){
+      if (this.props.text){
         this.props.cardsPageRequested({type:'cards'})
       } else {
         this.props.searchSubmit();
@@ -34,7 +34,8 @@ export default connect({
     }
  
     handleKeys(evt) {
-      if (evt.key == 'Enter') this.onSearchBarSubmit(evt)
+      if (evt.key == 'Enter') return this.onSearchBarSubmit(evt);
+      return this.props.searchChanged({text: evt.target.value});
     }
 
     render() {
@@ -58,7 +59,7 @@ export default connect({
                 hintText='Search...'
                 value={this.props.text}
                 underlineShow={false}
-                onChange={(evt) => this.props.searchChanged({text: evt.target.value})}
+                onChange={(evt) => this.handleKeys(evt)}
                 onKeyPress={(evt) => this.handleKeys(evt)}
               />
               <FontIcon 

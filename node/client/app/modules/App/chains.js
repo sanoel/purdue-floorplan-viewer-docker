@@ -124,7 +124,8 @@ export let importRoomsData = [
 
 export var computeSmasDiffs = [
   set('state:app.generating_smas_report', true),
-  parseSmasFiles, {
+	getSmasData, {
+//  parseSmasFiles, {
     success: [
 			forwardConvertSmasFiles, {
 				success: [
@@ -149,44 +150,57 @@ export var computeSmasDiffs = [
   },
 ]
 
-// Bring the SMAS csv file up as far as formatting the description with semicolons and such
-//Now take the data and convert it into an object in our database format
-//so that it may be compared
+// Convert the SQL results into the SMAS output format
 function forwardConvertSmasFiles({input, state, output, services}) {
+  let all_rows = [];
   let newShares = {} 
-// This must be .each to ensure order
-  return Promise.each(Object.keys(input.files), (filename) => {
-		newShares[filename] = {}
-  	let shares = _.clone(input.files[filename])
-  	return Promise.each(shares, (row, i) => {
-    	if (row['Description'].indexOf('On Loan') !== -1) {
-      	shares[i]['Description'] = row['Internal Note']
-      	shares[i]['Internal Note'] = row['Description']
-    	}
-    	shares[i]['Room Type'].trim()
-    	if (coeLib.smasRoomTypesWithPeople.indexOf(row['Room Type']) !== -1) {
-      	let persons = coeLib.parsePersonsFromSmasDescription(row['Description'])
-      	shares[i].Description = persons.map(name => name.trim()).sort().join(';')
-    	} 
-   	 	return false
-  	}).then(() => {
-// Print out a CSV file for diff checker utility usage.
-    	let options = {
-      	delimiter: ',',
-      	wrap: false,
-    	}	
-			let date = new Date()
-			let dateStr = (date.getMonth()+1).toString() +'-'+date.getDate().toString()+'-'+date.getFullYear().toString();
-    	fd(csvjson.toCSV(shares, options), filename.split('.csv')[0]+'-New-'+dateStr+'.csv')
-// Now put it into an object for comparison using something like _.isEqual
-    	return Promise.each(shares, (row, i) => {
-      	let name = row['Bldg']+' '+row['Room'];
-      	newShares[filename][name] = newShares[filename][name] || [];
-      	return newShares[filename][name].push(row)
-  		})
-  	})
+  return Promise.map(input.rows, (row) => {
+		let room = row.BUILDING_ABBREVIATION+' '+row.ROOM_NUMBER;
+		let share = row.SHARE_NUMBER;
+//		let share = row.SHARE_ID;
+		newShares[room] = newShares[room] || {};
+		newShares[room][share] = {};
+
+		newShares[room][share]['Internal Note'] = ''; 
+		newShares[room][share]['DESCRIPTION'] = row.DESCRIPTION; 
+		if (!row.DESCRIPTION) {
+			newShares[room][share].DESCRIPTION = '';
+		} else if (row['DESCRIPTION'].indexOf('On Loan') > -1) {
+			newShares[room][share]['Internal Note'] = row.DESCRIPTION;
+   		newShares[room][share].DESCRIPTION = ''; //row['Internal Note']
+		}
+		if (!newShares[room][share].DESCRIPTION) {
+			newShares[room][share].DESCRIPTION = '';
+		}
+    newShares[room][share]['BUILDING_ABBREVIATION'] = row.BUILDING_ABBREVIATION;
+    newShares[room][share]['USING_DEPT_ABBREVIATION'] = row.USING_DEPT_ABBREVIATION;
+    newShares[room][share]['ASSIGNED_DEPT_ABBREVIATION'] = row.ASSIGNED_DEPT_ABBREVIATION;
+    newShares[room][share]['ROOM_NUMBER'] = row['ROOM_NUMBER'];
+    newShares[room][share]['ROOM_CLASSIFICATION'] = row.ROOM_CLASSIFICATION.trim()
+    newShares[room][share]['TOTAL_AREA'] = row['TOTAL_AREA'].toString()
+//    newShares[room][share]['ROOM_ID'] = row['ROOM_ID'].toString()
+    newShares[room][share]['SHARE_ID'] = row['SHARE_ID'].toString()
+    newShares[room][share]['SHARE_PERCENT'] = row['SHARE_PERCENT'].toString()
+    newShares[room][share]['SHARE_AREA'] = row['SHARE_AREA'].toString()
+    newShares[room][share]['STATIONS'] = row['STATIONS'] ? row['STATIONS'].toString() : '0';
+		let persons;
+    if (coeLib.smasRoomTypesWithPeople.indexOf(row['ROOM_CLASSIFICATION']) !== -1) {
+     	persons = coeLib.parsePersonsFromSmasDescription(newShares[room][share]['DESCRIPTION'])
+     	newShares[room][share].DESCRIPTION = persons.map(name => name.trim()).sort().join(';')
+    }
+		all_rows.push(newShares[room][share])
+   	return false
   }).then(() => {
-		console.log('successss');
+// Print out a CSV file for diff checker utility usage.
+   	let options = {
+     	delimiter: ',',
+     	wrap: false,
+   	}
+		let date = new Date()
+		let dateStr = (date.getMonth()+1).toString() +'-'+date.getDate().toString()+'-'+date.getFullYear().toString();
+   	fd(csvjson.toCSV(all_rows, options), 'SMAS-'+dateStr+'.csv')
+// Now put it into an object for comparison using something like _.isEqual
+  }).then(() => {
     return output.success({newShares});
   })
 }
@@ -198,76 +212,82 @@ forwardConvertSmasFiles.outputs = ['success', 'error']
 // Spits out a csv file representing this "current" state of the DB as well as csv
 // of the differences between new and current.
 function getCurrentShares({input, state, output, services}) {
-	let diffs = []
-  let currentShares = {}
-  return Promise.each(Object.keys(input.newShares), (filename) => {
-		currentShares[filename] = []
-  // Loop through, generate the rooms and shares to be compared
-  // This assumes that shares are numbered consistently
-  	return Promise.each(Object.keys(input.newShares[filename]), (roomname) => {
-//    if (parseInt(input.newShares[key]['Share Number']) > 0) return false
-    	return services.http.get('/nodes?name='+roomname+'&type=room').then((response) => {
+	let diffs = [];
+  let currentShares = {};
+  let all_rows = [];
+	// Loop over rooms. Every existing room should occur once.
+  return Promise.each(Object.keys(input.newShares), (room) => {
+		currentShares[room] = {};
+	// Loop over shares.  This may need to be moved elsewhere.
+//  	return Promise.each(Object.keys(input.newShares[room]), (shareid) => {
+    	return services.http.get('/nodes?name='+room+'&type=room').then((response) => {
       	if (response.result.length > 0) {
-        // Loop through shares, create CSV row, and push them onto our array of rows.
+       		// Get all shares for the row; 
         	return services.http.get('/edges?from='+response.result[0]._id+'&type=share').then((result) => {
-          	let roomShares = []
           	return Promise.map(result.result, (share) => {
             	let dbShare = {
-              	'Bldg': share.building,
-              	'Room': share.room.split(' ')[1],
-              	'Share Number': share.share || share.name.split('-')[1].trim(),
-              	'%':share.percent,
-              	'Area': share.area,
-              	'Department Using': share.using,
-              	'Department Assigned':share.assigned,
-              	'Sta': share.stations,
-              	'Room Type': share.type,
+              	'BUILDING_ABBREVIATION': share.building,
+              	'ROOM_NUMBER': share.room.split(' ')[1],
+//              	'SHARE_ID': share.share || share.name.split('-')[1].trim(),
+              	'SHARE_ID': share.name.split('-')[1].trim(),
+              	'SHARE_PERCENT':share.percent,
+              	'SHARE_AREA': share.area,
+              	'USING_DEPT_ABBREVIATION': share.using,
+              	'ASSIGNED_DEPT_ABBREVIATION': share.assigned,
+              	'STATIONS': share.stations,
+              	'ROOM_CLASSIFICATION': share.type,
+								'TOTAL_AREA': response.result[0].area,
+//								'ROOM_ID': response.result.roomid,
             	}
-            	// Get associated people from the db, concatenate them in alphabetical order into the Description column
-            	if (coeLib.smasRoomTypesWithPeople.indexOf(dbShare['Room Type']) !== -1) {
+// Get linked people from the db, concatenate them in alphabetical order into the Description column
+            	if (coeLib.smasRoomTypesWithPeople.indexOf(dbShare['ROOM_CLASSIFICATION']) !== -1) {
               	return services.http.get('/edges?from='+share._id+'&type=person').then((res) => { 
                	 	return Promise.map(res.result, person => person.name).then(x => x.sort().join(';'))
-                	}).then((desc) => {
-                  	dbShare.Description = desc;
-                  	dbShare['Internal Note'] = share.note[0];
-                  	if (dbShare['Description'].indexOf(',') > -1) {
-                    	dbShare['Description'] = `"${dbShare['Description']}"`
-                  	}
-                  	roomShares.push(dbShare)
-                  	return 
-               	 	})
-            	} else { 
-              	dbShare['Description'] = share.description;
+                }).then((desc) => {
+                 	dbShare.DESCRIPTION = desc;
+									//TODO: note probably shouldn't be indexed here
+                 	dbShare['Internal Note'] = share.note[0];
+                 	if (dbShare['DESCRIPTION'].indexOf(',') > -1) {
+										console.log('comma present in ', dbShare)
+                   	dbShare['DESCRIPTION'] = `"${dbShare['DESCRIPTION']}"`
+                 	}
+									currentShares[room][dbShare.SHARE_ID] = dbShare;
+									all_rows.push(dbShare);
+                 	return 
+               	})
+            	} else {
+              	dbShare['DESCRIPTION'] = share.description;
+								//TODO: note probably shouldn't be indexed here
               	dbShare['Internal Note'] = share.note[0];
-              	if (dbShare['Description'].indexOf(',') > -1) {
-                	dbShare['Description'] = `"${dbShare['Description']}"`
+              	if (dbShare['DESCRIPTION'].indexOf(',') > -1) {
+                	dbShare['DESCRIPTION'] = `"${dbShare['DESCRIPTION']}"`
              	 	}
-              	roomShares.push(dbShare)
+								currentShares[room][dbShare.SHARE_ID] = dbShare;
+								all_rows.push(dbShare);
               	return
             	}
-          	}).then(() => {
-            	let sorted = _.sortBy(roomShares, 'Share Number')
-            	sorted.forEach((share, i) => {
-              	share['Share Number'] = i.toString();
-              	sorted[i]['Share Number'] = i.toString();
-              	currentShares[filename].push(share);
-            	})
-						// Now compare
-            	if (!_.isEqual(sorted, input.newShares[filename][roomname])) {
-								console.log(sorted, input.newShares[filename][roomname])
-              	diffs.push(sorted)
-           	 	}
           	})
         	})
       	} else return null
-	  	}).catch((error) => {
-				console.log(error)
-				if (error.status === 401) {
-					return output.unauthorized({})
-				}
-				return output.error({error})
-			})
-  	})
+//			})
+    }).then(() => {
+/*
+     	let sorted = _.sortBy(roomShares, 'Share Number')
+     	sorted.forEach((share, i) => {
+     	share['Share Number'] = i.toString();
+     	sorted[i]['Share Number'] = i.toString();
+     	currentShares[filename].push(share);
+    })
+*/
+// Compare by room.  If the entire room doesn't match, add it to diffs; 
+     	if (!_.isEqual(currentShares[room], input.newShares[room])) {
+				console.log(currentShares[room], input.newShares[room])
+				Object.keys(currentShares[room]).forEach((key) => {
+        	diffs.push(currentShares[room][key])
+        })
+      }
+			return;
+		})
   }).then(()=>{
     let options = {
      	delimiter: ',',
@@ -275,13 +295,16 @@ function getCurrentShares({input, state, output, services}) {
    	}
 		let date = new Date()
 		let dateStr = (date.getMonth()+1).toString() +'-'+date.getDate().toString()+'-'+date.getFullYear().toString();
-		Object.keys(currentShares).forEach(file => {
-			console.log(file, currentShares[file])
-   		fd(csvjson.toCSV(currentShares[file], options), file.split('.csv')[0]+'-Current-'+dateStr+'.csv')
-		})
+   	fd(csvjson.toCSV(all_rows, options), 'FPV-'+dateStr+'.csv')
    	fd(csvjson.toCSV(diffs, options), 'SmasChanges-'+dateStr+'.csv')
 		return output.success({currentShares})
-  })
+  }).catch((error) => {
+		console.log(error)
+		if (error.status === 401) {
+			return output.unauthorized({})
+		}
+		return output.error({error})
+	})
 }
 getCurrentShares.async = true
 getCurrentShares.outputs = ['success', 'error', 'unauthorized']
@@ -296,12 +319,23 @@ function readFile(file){
   });
 }
 
+function getSmasData({input, state, output, services}) {
+  return services.http.get('/smas').then((result) => {
+		console.log(result)
+    return output.success({rows: result.result.rows})
+  }).catch(() => output.error(
+    {'errorMsg': 'initiateApp: Unable to load svg floor plan file names!'}
+  )) 
+}
+getSmasData.async = true;
+getSmasData.outputs = ['success', 'error'];
+
 function parseSmasFiles({input, state, output, services}) {
 	var files = {};
 	return Promise.each(input.accepted, (file, i) => {
 		return readFile(file).then((result) => {
 			let data = null;
-   		try { data = csvjson.toObject(result, {delimiter: ',',/* quote: '"' */})}
+   		try { data = csvjson.toObject(result, {delimiter: ',', quote: '"' })}
    		catch(err) {
      		let err = 'Couldn\'t parse '+file.name+' into json. Is the data a csv file?'
      		return output.error({err})
@@ -317,22 +351,6 @@ function parseSmasFiles({input, state, output, services}) {
 }
 parseSmasFiles.async = true;
 parseSmasFiles.outputs = ["success", "error"]
-
-// See changes for the case of generating a report
-function compareRoomShares(smas, db) {
-  let diffs = []
-  db.forEach((dbShare, i) => {
-    if (!smas[i]) {
-      let diff = _.clone(dbShare)
-      diff['CHANGE TYPE'] = 'ADD';
-      diffs.push(diff)
-    } else if (!_.isEqual(smas[i], dbShare)) {
-      diff['CHANGE TYPE'] = 'UPDATE';
-      diffs.push(diff)
-    }
-  })
-  return diffs
-}
 
 function loadSvgFileNames({state, output, services}) {
   let PATH_TO_SVG = 'img/svgFloorPlans/svgFloorPlansSim/svgoManSvgo/'

@@ -69,45 +69,6 @@ export default connect({
     }
 
     render() {
-      let cardsTitle = this.props.cards_to_show.length>0 ?
-        (<p> {this.props.cards_to_show.length} results found.</p>)
-        : (<p>Nothing was found. </p>)
-      let cardsToShow = this.props.cards_to_show.map((card, idx) => {
-        let cardPreview = null, cardTitle = null, cardSubTitle = null, cardDetails = null
-        let icon = icons[card._type]
-        let doubleRows = false
-
-        if (card._type==='floorplan') {
-          doubleRows = true
-          cardPreview = (
-            <img
-              className={styles['card-svg']}
-              src={'/img/svgFloorPlans/svgFloorPlansSim/svgoManSvgo/'+card.filename} />
-          )
-        } else {
-          cardPreview = (<FontIcon className="material-icons">{icon}</FontIcon>)
-        }
-        cardTitle = card.name;
-        cardSubTitle = card._type;
-        cardSubTitle = cardSubTitle.charAt(0).toUpperCase() + cardSubTitle.slice(1)
-        cardDetails = 'Details to be added...'
-        return <GridTile className={styles.gridtile}
-          key={'card'+'_'+idx}
-          onClick={() => {this.handleClick(card)}}
-          rows={doubleRows ? 2 : 1}>
-          <Card className={styles['card']}>
-            <CardMedia className={styles['card-ele']}>
-              {cardPreview}
-            </CardMedia>
-            <CardTitle className={styles['card-ele']}
-              title={cardTitle} subtitle={cardSubTitle} />
-            <CardText className={styles['card-ele']}>
-              {cardDetails}
-            </CardText>
-          </Card>
-        </GridTile>
-      })
-
       return (
         <div className = {styles.wrapper}>
           <div className={styles.title}>
@@ -115,7 +76,10 @@ export default connect({
           </div>
           <div className={styles['cards-title']}>
             <br/>
-              {cardsTitle}
+              {this.props.cards_to_show && this.props.cards_to_show.length > 0 ?
+        				(<p> {this.props.cards_to_show.length} results found.</p>)
+        				: (<p>Nothing was found. </p>)
+   						}
             <br/>
           </div>
           <div className={styles['cards']}
@@ -125,7 +89,34 @@ export default connect({
                 padding={padding}
                 style={gridStyles.gridList}
               >
-              {cardsToShow}
+							{this.props.cards_to_show ? this.props.cards_to_show.map((card, idx) =>
+								<GridTile 
+									className={styles.gridtile}
+          				key={'card'+'_'+idx}
+          				onClick={() => {this.handleClick(card)}}
+          				rows={card._type==='floorplan' ? 2 : 1}>
+          				<Card className={styles['card']}>
+            				<CardMedia className={styles['card-ele']}>
+											{card._type === 'floorplan' ?
+					            <img
+              					className={styles['card-svg']}
+              					src={'/img/svgFloorPlans/svgFloorPlansSim/svgoManSvgo/'+card.filename}
+											/>
+											:
+											<FontIcon className="material-icons">{icons[card._type]}</FontIcon>
+											}
+            				</CardMedia>
+            				<CardTitle 
+											className={styles['card-ele']}
+              				title={card.name}
+											subtitle={card._type.charAt(0).toUpperCase() + card._type.slice(1)}
+										/>
+            				<CardText className={styles['card-ele']}>
+              				Details to be added...
+            				</CardText>
+          				</Card>
+        				</GridTile>
+							) : null}
               </GridList>
             <br/>
           </div>

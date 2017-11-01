@@ -372,9 +372,9 @@ export function updateRoomsToShow({state, services}) {
 // Update cards.cards_to_show. If input.card_filters is specified, only cards
 // with a type listed there will be shown.
 export function updateCardsToShow({input, state}) {
-  let cardsToShowIndices = []
  // if (!input.card_force && state.get('viewer.state.query')){
-    var cardsToShow = state.get('sidebar.search_results')
+//  let cardsToShow = state.get('sidebar.search_results')
+  let cardsToShow = state.get('searchbar.results')
 /*
   } else {
     // Use all search results

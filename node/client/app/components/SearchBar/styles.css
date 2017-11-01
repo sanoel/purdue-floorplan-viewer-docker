@@ -50,5 +50,5 @@
   transition: background 0.5s;
 }
 .search-button:hover {
-  background: white;
+  color: white;
 }
