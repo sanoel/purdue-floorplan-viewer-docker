@@ -5,7 +5,6 @@ export let updateSearchBarInput = [
   copy('input:text', 'state:searchbar.text'),
   deriveSuggestionCardInfo, {
 		success: [
-			set('state:searchbar.results', 'input:results'),
 			copy('input:results', 'state:searchbar.results'),
 		],
 		error: [],
@@ -35,7 +34,9 @@ export function deriveSuggestionCardInfo({input, state, output, services}) {
 			}
 			return output.error({error})
     })
-  } else return false
+  } else {
+		return output.success({results: []});
+	}
 }
 deriveSuggestionCardInfo.async = true;
 deriveSuggestionCardInfo.outputs = ['success', 'error', 'unauthorized'];

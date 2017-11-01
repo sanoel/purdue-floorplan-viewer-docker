@@ -64,7 +64,7 @@ export default connect({
               />
               <FontIcon 
                 className={this.props.text==='' ? styles.hidden : "fa fa-times"}
-                onTouchTap={evt => this.props.frontPageRequested(evt)}
+                onTouchTap={evt => { this.props.searchChanged({text: ''}); this.props.frontPageRequested(evt)}}
               />
             </Paper>
             <FontIcon
