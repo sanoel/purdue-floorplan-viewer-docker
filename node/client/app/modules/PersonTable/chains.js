@@ -8,7 +8,7 @@ export var removePerson = [
       resetTable,
     ],
     error: [],
-		unauthorized: [...failedAuth],
+    unauthorized: [...failedAuth],
   }
 ]
 
@@ -17,7 +17,7 @@ export var updateNewPersonText = [
   getPersonMatches, {
     success: [setMatches],
     error: [],
-		unauthorized: [...failedAuth],
+    unauthorized: [...failedAuth],
   },
 ]
 
@@ -26,7 +26,7 @@ export var setPersonMatch = [
   getPersonMatches, {
     success: [setMatches],
     error: [],
-		unauthorized: [...failedAuth],
+    unauthorized: [...failedAuth],
   },
 ]
 
@@ -37,10 +37,10 @@ export var addPerson = [
       putNewPerson, {
         success: [setPerson, resetTable],
         error: [],
-				unauthorized: [...failedAuth],
+        unauthorized: [...failedAuth],
       },
     ],
-		unauthorized: [...failedAuth],
+    unauthorized: [...failedAuth],
   },
 ]
 
@@ -76,13 +76,13 @@ function getPersonFromText({input, state, output, services}) {
   if (input.match) return output.success({person:input.match})
   return services.http.get('/person/'+input.text).then((results)=>{
     if (results.result.length > 0) return output.success({person: results.result[0]})
-	}).catch((error) => {
-		console.log(error)
-		if (error.status === 401) {
-			return output.unauthorized({})
-		}
-		return output.error({error})
-	})
+  }).catch((error) => {
+    console.log(error)
+    if (error.status === 401) {
+      return output.unauthorized({})
+    }
+    return output.error({error})
+  })
 }
 getPersonFromText.async = true;
 getPersonFromText.outputs = ['success', 'error', 'unauthorized'];
@@ -90,15 +90,15 @@ getPersonFromText.outputs = ['success', 'error', 'unauthorized'];
 function createPersonEdge({input, state, output, services}) {
   let to = input.match._id;
   let from = input.share._id;
-  return services.http.put('/edges?to='+to+'&from='+from+'&type=share-person').then((results) => {
+  return services.http.put('/edges?_to='+to+'&_from='+from+'&type=share-person').then((results) => {
     return output.success()
-	}).catch((error) => {
-		console.log(error)
-		if (error.status === 401) {
-			return output.unauthorized({})
-		}
-		return output.error({error})
-	})
+  }).catch((error) => {
+    console.log(error)
+    if (error.status === 401) {
+      return output.unauthorized({})
+    }
+    return output.error({error})
+  })
 }
 createPersonEdge.async = true;
 createPersonEdge.outputs = ['success', 'error', 'unauthorized'];
@@ -106,30 +106,30 @@ createPersonEdge.outputs = ['success', 'error', 'unauthorized'];
 function deletePersonEdge({input, state, output, services}) {
   let from = input.share._id;
   let to = input.person._id;
-  return services.http.delete('/edges?from='+from+'&to='+to).then((results) => {
+  return services.http.delete('/edges?_from='+from+'&_to='+to).then((results) => {
     return output.success()
-	}).catch((error) => {
-		console.log(error)
-		if (error.status === 401) {
-			return output.unauthorized({})
-		}
-		return output.error({error})
-	})
+  }).catch((error) => {
+    console.log(error)
+    if (error.status === 401) {
+      return output.unauthorized({})
+    }
+    return output.error({error})
+  })
 }
 deletePersonEdge.async = true;
 deletePersonEdge.outputs = ['success', 'error'];
 
 function getPersonMatches({input, state, output, services}) {
   if (input.text !== '') {
-    return services.http.get('/search?text='+input.text+'&type=person').then((results) => {
+    return services.http.get('/search?text='+input.text+'&_type=person').then((results) => {
       return output.success({matches: results.result.filter((match) => {return match._type === 'person'})})
-		}).catch((error) => {
-			console.log(error)
-			if (error.status === 401) {
-				return output.unauthorized({})
-			}
-			return output.error({error})
-		})
+    }).catch((error) => {
+      console.log(error)
+      if (error.status === 401) {
+        return output.unauthorized({})
+      }
+      return output.error({error})
+    })
   } else return output.success({matches: []})
 }
 getPersonMatches.async = true;
@@ -155,13 +155,13 @@ function putNewPerson({input, state, output, services}) {
   person.fulltext = createFullText(person, searchablePersonAttributes)
   return services.http.put('/person/', person).then((results)=>{
     return output.success({person: Object.assign(results.result, person), to: results.result._id})
-	}).catch((error) => {
-		console.log(error)
-		if (error.status === 401) {
-			return output.unauthorized({})
-		}
-		return output.error({error})
-	})
+  }).catch((error) => {
+    console.log(error)
+    if (error.status === 401) {
+      return output.unauthorized({})
+    }
+    return output.error({error})
+  })
 }
 putNewPerson.async = true;
 putNewPerson.outputs = ['success', 'error', 'unauthorized'];

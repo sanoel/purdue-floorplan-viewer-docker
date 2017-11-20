@@ -53,16 +53,12 @@ let searchableFloorplanAttributes = ['building', 'floor', 'name']
 // If the example person has a defined first name and only one "longer" match
 // beginning with that letter, use it to update it.
 function handleMultiplePersonMatches(example, matches) {
-  if (!example.given_name) return;
-  let update = example;
+  if (!example.given_name) return
   let temp = true;
-  let give;
   matches.forEach((match, i) => {
-    if (match.given_name) {
-      if (match.given_name.indexOf(update.given_name)) {
-        give = match.given_name.length > update.given_name.length ? match.given_name : update.given_name;
-        update = match;
-        update.given_name = give;
+    if (example.given_name && match.given_name) {
+      if (match.given_name.length > update.given_name.length && match.given_name.indexOf(update.given_name)) {
+        return match;
       }
     }
   })
@@ -71,16 +67,8 @@ function handleMultiplePersonMatches(example, matches) {
 
 function handleUpdatePersonMatches(example, match) {
   if (example.given_name) {
-    if (!match.given_name) {
-      let update = match;
-      update.given_name = example.given_name;
-      return example
-    }
-    if (example.given_name.length > match.given_name.length && example.given_name.indexOf(match.given_name)) {
-      let update = match;
-      update.given_name = example.given_name;
-      return update
-    }
+    if (!match.given_name) return example
+    if (example.given_name.length > match.given_name.length) return example
   }
   return match
 }
@@ -90,7 +78,6 @@ function handleUpdatePersonMatches(example, match) {
 // lookup is performed by example with the given example keys. If a match 
 // is found, it is updated, otherwise it is saved as a new entry. 
 function populateCollection(collection, data, exampleKeys) {
-  let metadata = {}
   return Promise.each(Object.keys(data), (key) => {
     let example = {}
     exampleKeys.forEach((k)=>{
@@ -98,23 +85,16 @@ function populateCollection(collection, data, exampleKeys) {
     })
     example._type = data[key]._type;
     return Promise.resolve(collection.byExample(example)).call('all').then((matches) => {
-      if (matches.length === 0) {
-        return collection.save(data[key]).then((res) => {
-          return metadata[key] = res;
-        })
-      }
+      if (matches.length === 0) return collection.save(data[key]);
 // If a single match is found, update it; apply extra handling for person matches
       if (matches.length === 1) {
         let update = data[key];
         if (example._type === 'person') update = handleUpdatePersonMatches(example, matches[0]);
         console.log('node already exists. Updating', example,' with', update);
-        return collection.update(matches[0]._id, update).then((res) => {
-          return metadata[key] = res;
-        });
+        return collection.update(matches[0]._id, update);
       }
-// Do not attempt to update when multiple matching nodes are found, except make an attempt for persons (disabled at the moment);
+// Do not attempt to update when multiple matching nodes are found, except make an attempt for persons;
       if (matches.length > 1) {
-/*
         if (example._type === 'person') {
           let update = handleMultiplePersonMatches(example, matches);
           if (update) {
@@ -122,17 +102,11 @@ function populateCollection(collection, data, exampleKeys) {
             return collection.update(update._id, update);
           }
         }
-*/
-        console.log('multiple matches found for example. Creating a unique node: ', example, matches)
-        return collection.save(data[key]).then((res) => {
-          return metadata[key] = res
-        })
+        console.log('multiple matches found for example. not updating: ', example, matches)
+        return;
       }
     })
-  }).catch((err) => { console.log(err)
-  }).then((result) => {
-    return metadata
-  })
+  }).catch((err) => { console.log(err) })
 }
 
 ///////// Handle SMAS Data /////////////
@@ -213,7 +187,6 @@ function getSmasPeople(smasShares) {
       let persons = smasShares[key].description.split(';');
       return Promise.map(persons, (person) => {
         let name = person.trim();
-        if (name.split(' ').length > 2) return;
         smasPersons[name] = {
           name,
     //      dept: row['Department Using'],
@@ -263,10 +236,9 @@ function findSmasSharePersonEdges(nodes, edges, smasShares) {
     let smasShare = { share: key };
     return Promise.resolve(nodes.byExample(smasShare)).call('next').then((share) => {
       if (smasRoomTypesWithPeople.indexOf(share.type) <= -1) return;
-       let smasPersons = share.description.split(';');
+       let smasPersons = parsePersonsFromSmasDescription(share.description);
        return Promise.each(smasPersons, (name) => {
          if (name === '') return;
-         if (name.split(' ').length > 2) return;
          let smasPerson = { name: name.trim() }
          return Promise.resolve(nodes.byExample(smasPerson)).call('next').then((person) => {
            if (!share) console.log('SHARE DOESNT EXIST', smasShare)
@@ -289,7 +261,7 @@ function findSmasSharePersonEdges(nodes, edges, smasShares) {
 // Use the keys data to find and add people to the database (each row has a keyholder and possibly their supervisor);
  function getKeysDataPeople(keysData) {
   let keysPeople = {}
-  return Promise.map(keysData, function(row, i) {
+  return Promise.each(keysData, function(row, i) {
 //Parse out the keyholder as a person
     let keyholder = (row['FIRST'].trim() + ' ' + row['LAST NAME'].trim()).trim();
     keysPeople[keyholder] = keysPeople[keyholder] || {
@@ -380,28 +352,36 @@ function findFloorplanRoomEdges(nodes, edges, smasData) {
 }
 
 // Only the keys data contains person -> person relationships (supervisor -> keyholder)
-function findSupervisorEdges(nodes, edges, keysData, keysDataPeopleMetadata) {
-  return Promise.each(keysData, (row, i) => {
-    let keyholder = (row['FIRST'].trim() + ' ' + row['LAST NAME'].trim()).trim();
-    let supervisor = row['SUPERVISOR'].trim();
-    let name = supervisor[0] + supervisor.substring(1, supervisor.length).toLowerCase();
-    console.log(name, keyholder)
-    if (!keysDataPeopleMetadata[name]) { 
-      console.log(supervisor); 
-      return; 
-    }
-    let edge = {_from: keysDataPeopleMetadata[name]._id, _to: keysDataPeopleMetadata[keyholder]._id, _type:'supervisor-keyholder'};
-    return Promise.resolve(edges.byExample(edge)).call('all').then((edgeMatches) => {
-      if (edgeMatches.length === 0 ) {
-        return edges.save(edge);
-      } else if (edgeMatches.length === 1) {
-        console.log('EDGE ALREADY EXISTS:', edge, edgeMatches[0]); 
-        return;
-      } else if (edgeMatches.length > 1) {
-        console.log('MULTIPLE MATCHING EDGES EXISTS!!!!!!!!!!!!!!!!!!!!!!!!!!:', edge, edgeMatches); 
-        return;
-      }
-    })
+function findSupervisorEdges(nodes, edges, keysData) {
+  return Promise.each(keysData, function(row, i) {
+    let keyholder = { name: row['FIRST'] + ' ' + row['LAST NAME'] }
+    if (row['SUPERVISOR'] && (row['SUPERVISOR'].trim().length > 0)) {
+      let supervisor = row['SUPERVISOR'].trim();
+      supervisor = { name: supervisor[0] + supervisor.substring(1, supervisor.length).toLowerCase() }
+      return nodes.byExample(keyholder).then(function(keyholderCursor) {
+        if (keyholderCursor.count === 0 ) {
+          console.log('KEYHOLDER NOT FOUND:', keyholder);
+          return null;
+        } else if (keyholderCursor.count > 1) {
+          console.log('MULTIPLE PEOPLE FOUND FOR KEYHOLDER: ', keyholderCursor._result); 
+          return null;
+        } else {
+          return nodes.byExample(supervisor).then(function(supervisorCursor) {
+            if (supervisorCursor.count === 0) {
+              console.log('SUPERVISOR NOT FOUND:', supervisor);
+              return null;
+            } else if (supervisorCursor.count > 1) {
+              console.log('MULTIPLE PEOPLE FOUND FOR SUPERVISOR: ', supervisorCursor._result); 
+              return null;
+            } else {
+//              console.log('LINKED SUPERVISOR', supervisor.name, ' TO PERSON ', keyholder.name); 
+              let edge = {_from: supervisorCursor._result[0]._id, _to: keyholderCursor._result[0]._id, _type: 'supervisor'}
+              return edges.save(edge)
+            }
+          })
+        }
+      })
+    } else return null;
   })
 }
 

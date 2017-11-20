@@ -19,6 +19,7 @@ if (server_addr !== "none") {
 var express = require('express');
 var app = express();
 var helmet = require('helmet');
+var bodyParser = require('body-parser');
 
 const relativePathToFloorplans = '/img/svgFloorPlans/svgFloorPlansSim/svgoManSvgo/';
 
@@ -27,6 +28,8 @@ var edges = db.collection('edges');
 var putRoute = '';
 
 app.use(express.static(contentBase));
+app.use(bodyParser.urlencoded());
+app.use(bodyParser.json());
 app.use(helmet());
 
 /////////////////////////////////////////////////////////////
@@ -53,40 +56,40 @@ oracledb.getConnection(config, (err, conn) => {
 /////////////////////////////////////////////////////////////
 // Token lookup
 function checkToken (token) {
-	return db.query(aql`
-		FOR a IN authorizations
-		RETURN {token: ${token}} 
-	`).then(cursor => cursor.next())
-	.then((result) => {
-		return true
-	}).catch((err) => {
-		return false
-	})
+  return db.query(aql`
+    FOR a IN authorizations
+    RETURN {token: ${token}} 
+  `).then(cursor => cursor.next())
+  .then((result) => {
+    return true
+  }).catch((err) => {
+    return false
+  })
 }
 
 function getUserFromToken (token) {
-	return db.query(aql`
-		FOR a IN authorizations
-		FILTER a.token == ${token}
-		RETURN a.username 
-	`).then(cursor => cursor.next())
-	.then((result) => {
-		return result 
-	}).catch((err) => {
-		return false
-	})
+  return db.query(aql`
+    FOR a IN authorizations
+    FILTER a.token == ${token}
+    RETURN a.username 
+  `).then(cursor => cursor.next())
+  .then((result) => {
+    return result 
+  }).catch((err) => {
+    return false
+  })
 }
 
 /////////////////////////////////////////////////////////////
 // Authentication middleware
 function ensureAuthenticated () {
-	return function (req, res, next) {
-		let token = req.get('access_token')
-		if (token && checkToken(token)) {
-			return next()
-		}
-		return res.sendStatus(401)
-	}
+  return function (req, res, next) {
+    let token = req.get('access_token')
+    if (token && checkToken(token)) {
+      return next()
+    }
+    return res.sendStatus(401)
+  }
 }
 
 /////////////////////////////////////////////////////////////
@@ -107,34 +110,34 @@ passport.use(new SamlStrategy({
 /*
 passport.use(new LocalStrategy(
   (username, password, done) => {
-		console.log('username:', username, 'password:', password)
+    console.log('username:', username, 'password:', password)
     db.query(aql`
-				FOR doc IN users
-				FILTER doc.password == ${password}
-				FILTER doc.username == ${username}
-		    RETURN doc
+        FOR doc IN users
+        FILTER doc.password == ${password}
+        FILTER doc.username == ${username}
+        RETURN doc
     `).then(result => result.next())
-		.then((res) => {
-			console.log(res)
-			if (res) {
-				delete res.password
-	      return done(null, res)
-			} 
-			return done(null, false)
-		}).catch((err) => {
-			console.log(err)
-			return done(null, false)
-		})
-	// Always use hashed passwords and fixed time comparison
-		bcrypt.compare(password, user.passwordHash, (err, isValid) => {
-			if (err) {
-				return done(err)
-			}
-			if (!isValid) {
-				return done(null, false)
-			}
-			return done(null, user)
-		})
+    .then((res) => {
+      console.log(res)
+      if (res) {
+        delete res.password
+        return done(null, res)
+      } 
+      return done(null, false)
+    }).catch((err) => {
+      console.log(err)
+      return done(null, false)
+    })
+  // Always use hashed passwords and fixed time comparison
+    bcrypt.compare(password, user.passwordHash, (err, isValid) => {
+      if (err) {
+        return done(err)
+      }
+      if (!isValid) {
+        return done(null, false)
+      }
+      return done(null, user)
+    })
   }
 ))
 */
@@ -147,25 +150,25 @@ passport.use(new LocalStrategy(
 // Serialize and Deserialize
 /*
 passport.serializeUser(function(user, done) {
-	// placeholder for custom user serialization
-	// null is for errors
+  // placeholder for custom user serialization
+  // null is for errors
   done(null, user._id);
 });
-		
+    
 passport.deserializeUser(function(id, done) {
   // placeholder for custom user deserialization.
   // maybe you are going to get the user from mongo by id?
   // null is for errors
-	db.query(aql`
-	  RETURN DOCUMENT('users', id)
+  db.query(aql`
+    RETURN DOCUMENT('users', id)
   `).then(result => result.next())
-	.then((res) => {
-		console.log('~~~~~~~~~~', res)
+  .then((res) => {
+    console.log('~~~~~~~~~~', res)
     done(null, profile)
-	}).catch((err) => {
-		console.log(err);
-		done(null, err)
-	})
+  }).catch((err) => {
+    console.log(err);
+    done(null, err)
+  })
 });
 */
 
@@ -175,32 +178,32 @@ passport.deserializeUser(function(id, done) {
 // Login and logout routes
 app.post('/login', (req, res) => {
   return db.query(aql`
-		FOR doc IN users
-		FILTER doc.password == ${req.query.password}
-		FILTER doc.username == ${req.query.username}
-	  RETURN doc
+    FOR doc IN users
+    FILTER doc.password == ${req.query.password}
+    FILTER doc.username == ${req.query.username}
+    RETURN doc
   `).then(result => result.next())
-	.then((user) => {
-		// generate a token and create a new authorization for the user
-		if (user.username && user.password) {
-			return db.query(aql`
-				INSERT {
-					token: RANDOM_TOKEN(21),
-					username: ${user.username},
-					scopes: '' //TODO: consider specifying levels of permission
-				}	IN authorizations
-				RETURN NEW
-			`).then(cursor => cursor.next())
-			.then((auth) => {
-				return res.json({token:auth.token})
-			}).catch((err) => {
-				return res.sendStatus(401)
-			})
-		}
-		return res.sendStatus(401)
-	}).catch((error) => {
-		return res.sendStatus(401)
-	})
+  .then((user) => {
+    // generate a token and create a new authorization for the user
+    if (user.username && user.password) {
+      return db.query(aql`
+        INSERT {
+          token: RANDOM_TOKEN(21),
+          username: ${user.username},
+          scopes: '' //TODO: consider specifying levels of permission
+        }  IN authorizations
+        RETURN NEW
+      `).then(cursor => cursor.next())
+      .then((auth) => {
+        return res.json({token:auth.token})
+      }).catch((err) => {
+        return res.sendStatus(401)
+      })
+    }
+    return res.sendStatus(401)
+  }).catch((error) => {
+    return res.sendStatus(401)
+  })
 })
 
 app.get('/logout', (req, res) => {
@@ -215,44 +218,31 @@ app.get(relativePathToFloorplans, (req, res) => {
 })
 
 app.get('/edges/', ensureAuthenticated(), (req, res) => {
+  if (!req.query._from && req.query._to) return res.send('either _to or _from must be specified in an edge query');
   let edgeCollection = db.collection('edges')
   let bnd, key;
-  let type = req.query.type
-  if (req.query.from)  { 
-    db.query(aql`
-      FOR v, e, p IN 0..1 
-        OUTBOUND ${req.query.from}
-        edges
-        FILTER v._type == ${type}
-      RETURN v`
-    ).then(function(cursor) {
-      res.json(cursor._result)
-    }).catch((err) => {
-      console.log(err);
-      res.json(err);
+  db.query(aql`
+    FOR v, e, p IN 0..1 
+      OUTBOUND ${req.query._from ? req.query._from : req.query._to}
+      edges
+      FILTER v._type == ${req.query._type}
+    RETURN v`
+  ).then((cursor) => {
+    cursor.all().then((result) => {
+       res.json(result)
     })
-  }
-  if (req.query.to) {
-    db.query(aql`
-      FOR v, e, p IN 0..1 
-        INBOUND ${req.query.to}
-        edges
-        FILTER v._type == ${type}
-      RETURN v`
-    ).then(function(cursor) {
-      res.json(cursor._result)
-    }).catch((err) => {
-      console.log(err);
-      res.json(err);
-    })
-  }
+  }).catch((err) => {
+    console.log(err);
+    res.json(err);
+  })
 })
 
 app.get('/search', ensureAuthenticated(), (req, res) => {
   let collection = db.collection('nodes')
-  collection.fulltext("fulltext", 'prefix:'+req.query.text.split(' ').join(',prefix:'))
-  .then((cursor) => {
-    res.json(cursor._result)
+  collection.fulltext("fulltext", 'prefix:'+req.query.text.split(' ').join(',prefix:')).then((cursor) => {
+    cursor.all().then((results)=> {
+      res.json(results)
+    })
   }).catch((err) => {
     console.log(err);
     res.json(err);
@@ -261,9 +251,11 @@ app.get('/search', ensureAuthenticated(), (req, res) => {
 
 app.get('/nodes', ensureAuthenticated(), (req, res) => {
   let collection = db.collection('nodes')
-  collection.byExample({ _type: req.query.type, name: decodeURI(req.query.name) })
+  collection.byExample({ _type: req.query._type, name: decodeURIComponent(req.query.name) })
   .then((cursor) => {
-    res.json(cursor._result)
+    cursor.all().then((result) => {
+      return res.json(result)
+    })
   }).catch((err) => {
     console.log(err);
     res.json(err);
@@ -273,11 +265,11 @@ app.get('/nodes', ensureAuthenticated(), (req, res) => {
 app.delete('/edges', ensureAuthenticated(), (req, res) => {
   let collection = db.collection('nodes')
   let example = {}
-  if (req.query.to) example._to = req.query.to
-  if (req.query.from) example._from = req.query.from
-  if (req.query.type) example.type = req.query.type
+  if (req.query._to) example._to = req.query._to
+  if (req.query._from) example._from = req.query._from
+  if (req.query._type) example._type = req.query._type
   collection.removeByExample(example).then((result) => {
-    console.log('DELETED: something of type ,', example.type, result._result)
+    console.log('DELETED: something of type ,', example._type, result._result)
     res.json(result)
   }).catch((err) => {
     console.log(err);
@@ -288,7 +280,7 @@ app.delete('/edges', ensureAuthenticated(), (req, res) => {
 app.delete('/nodes', ensureAuthenticated(), (req, res) => {
   let collection = db.collection('nodes')
   let example = {}
-  if (req.query.type) example._type = req.query.type
+  if (req.query._type) example._type = req.query._type
   if (req.query.name) example.name = req.query.name
   if (req.query.id) example._id = req.query.id
   if (req.query.key) example._key = req.query._key
@@ -303,42 +295,44 @@ app.delete('/nodes', ensureAuthenticated(), (req, res) => {
 
 app.post('/nodes', ensureAuthenticated(), (req, res) => {
   let collection = db.collection('nodes')
-  req.pipe(concat(function(body) {
-    var body = JSON.parse(body)
-		getUserFromToken(req.get('access_token')).then((username) => {
-			body.createdDate = Date.now();
-			body.modifiedBy = username;
-    	collection.save(body).then((result)=>{
-      	res.json(result)
-    	}).catch((err)=>{
-      	console.log(err)
-      	res.send(err)
-    	})
-   	})
-  }))
+  var body = req.body;
+  getUserFromToken(req.get('access_token')).then((username) => {
+    body._createdDate = Date.now();
+    body._modifiedBy = username;
+    collection.save(body).then((result)=>{
+      res.json(result)
+    }).catch((err)=>{
+      console.log(err)
+      res.send(err)
+     })
+  })
 })
 
 app.put('/nodes', ensureAuthenticated(), (req, res) => {
   let collection = db.collection('nodes')
-  req.pipe(concat(function(body) {
-		getUserFromToken(req.get('access_token')).then((username) => {
-			console.log('2', username)
-    	var body = JSON.parse(body)
-			body.modifiedDate = Date.now();
-			body.modifiedBy = username;
-    	collection.updateByExample({_id: req.query.id}, body).then((result)=>{
-      	res.json(result)
-    	}).catch((err)=>{
-      	console.log(err)
-      	res.send(err)
-    	})
+  getUserFromToken(req.get('access_token')).then((username) => {
+    console.log('2', username, body)
+    var body = req.body;
+    body._modifiedDate = Date.now();
+    body._modifiedBy = username;
+    collection.updateByExample({_id: req.query.id}, body).then((result) => {
+      console.log('RES', result)
+      res.json(result)
+    }).catch((err) => {
+      console.log(err)
+      res.send(err)
     })
-  }))
+  })
 })
 
 app.post('/edges', ensureAuthenticated(), (req, res) => {
   let collection = db.collection('edges')
-  collection.save({_to:req.query.to, _from: req.query.from, type:req.query.type}).then((result) => {
+  console.log(req.query)
+  collection.save({
+    _to: decodeURIComponent(req.query._to), 
+    _from: decodeURIComponent(req.query._from),
+    _type:req.query._type
+  }).then((result) => {
     res.json(result)
   }).catch((err)=>{
     console.log(err)
@@ -358,31 +352,31 @@ app.get('/collectionById/:collection/:key', ensureAuthenticated(), (req, res) =>
 
 // QUERY for s
 app.get('/stuff', ensureAuthenticated(), (req, res) => {
-	let node = 'nodes/'+req.query.name
+  let node = 'nodes/'+req.query.name
   let filters = Object.keys(req.query).map((key) => {
-		return `FILTER v.${key} === '${req.query[key]}'`
-	})
-	console.log('FILTERS: ', filters)
-	db.query(aql`
-		FOR v,e,p IN 0..5 
-	  OUTBOUND ${node}
-	  edges
-		${filters}
-	  RETURN DISTINCT p.vertices[1]
-	`).then((result) => {
-		res.json(result)
-	}).catch((err) => {
+    return `FILTER v.${key} === '${req.query[key]}'`
+  })
+  console.log('FILTERS: ', filters)
+  db.query(aql`
+    FOR v,e,p IN 0..5 
+    OUTBOUND ${node}
+    edges
+    ${filters}
+    RETURN DISTINCT p.vertices[1]
+  `).then((result) => {
+    res.json(result)
+  }).catch((err) => {
     console.log(err)
-		res.send(err)
-	})
+    res.send(err)
+  })
 })
 
 app.get('/smas', ensureAuthenticated(), (req, res) => {
   connection.execute(
-    `SELECT TOTAL_AREA,BUILDING_ABBREVIATION,ROOM_ID,ROOM_NUMBER,SHARE_NUMBER,SHARE_ID,SHARE_PERCENT,SHARE_AREA,STATIONS,DESCRIPTION,ROOM_CLASSIFICATION,ASSIGNED_DEPT_ABBREVIATION,USING_DEPT_ABBREVIATION from OSIRIS.ROOM_CURRENT WHERE BUILDING_ABBREVIATION IN ('ARMS', 'GRIS', 'HAMP', 'ME', 'MSEE', 'WANG', 'EE') ORDER BY BUILDING_ABBREVIATION `,
+    `SELECT SHARE_INTERNAL_NOTE,TOTAL_AREA,BUILDING_ABBREVIATION,ROOM_ID,ROOM_NUMBER,SHARE_NUMBER,SHARE_ID,SHARE_PERCENT,SHARE_AREA,STATIONS,DESCRIPTION,ROOM_CLASSIFICATION,ASSIGNED_DEPT_ABBREVIATION,USING_DEPT_ABBREVIATION from OSIRIS.ROOM_CURRENT WHERE BUILDING_ABBREVIATION IN ('ARMS', 'GRIS', 'HAMP', 'ME', 'MSEE', 'WANG', 'EE') ORDER BY BUILDING_ABBREVIATION `,
     (err, result) => {
       if (err) { console.error(err.message); return; }                         
-		res.json(result);
+    res.json(result);
     }
   );
 })

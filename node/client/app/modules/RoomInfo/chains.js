@@ -1,6 +1,7 @@
 import { copy, set, unset, toggle, when } from 'cerebral/operators';
 import { failedAuth } from '../Login/chains';
 import Promise from 'bluebird';
+import uuid from 'uuid';
 
 export var cancelAttributeDialog = [
   copy('state:roominfo.room.attributes', 'state:roominfo.attribute_dialog.attributes'), 
@@ -13,7 +14,7 @@ export var submitAttributeDialog = [
   putRoomAttributes, {
     success: [],
     error: [],
-		unauthorized: [...failedAuth],
+    unauthorized: [...failedAuth],
   },
 ]
 
@@ -40,7 +41,7 @@ export var updateNewPersonText = [
   getPersonMatches, {
     success: [setMatches],
     error: [],
-		unauthorized: [...failedAuth],
+    unauthorized: [...failedAuth],
   },
 ]
 
@@ -49,7 +50,7 @@ export var setPersonMatch = [
   getPersonMatches, {
     success: [setMatches],
     error: [],
-		unauthorized: [...failedAuth],
+    unauthorized: [...failedAuth],
   },
 ]
 
@@ -62,10 +63,10 @@ export var addPerson = [
       putNewPerson, {
         success: [setPerson, resetTable],
         error: [],
-				unauthorized: [...failedAuth],
+        unauthorized: [...failedAuth],
       },
     ],
-		unauthorized: [...failedAuth],
+    unauthorized: [...failedAuth],
   },
 ]
 
@@ -110,9 +111,10 @@ export var removeShare = [
   deleteShare, {
     success: [
       unsetShare,
+      set('state:roominfo.share_dialog.new_person', { text: '', matches: [], selected_match: {} }),
     ],
     error: [],
-		unauthorized: [...failedAuth],
+    unauthorized: [...failedAuth],
   },
 ]
 
@@ -130,7 +132,7 @@ export var cancelDialog = [
           unsetShare,
         ],
         error: [],
-				unauthorized: [...failedAuth],
+        unauthorized: [...failedAuth],
       },
     ],
     false: [
@@ -151,19 +153,33 @@ export var addShare = [
       copyShareToRoom,
     ],
     error: [],
-		unauthorized: [...failedAuth],
+    unauthorized: [...failedAuth],
   }
 ]
 
 export var submitDialog = [
   set('state:roominfo.share_dialog.open', false),
   set('state:roominfo.share_dialog.new_person', { text: '', matches: [], selected_match: {} }),
-  updateShare, {
-    success: [
-      copyShareToRoom,
+  when('state:roominfo.share_dialog.new_share'), {
+    false: [
+      updateShare, {
+        success: [
+          copyShareToRoom,
+        ],
+        error: [],
+        unauthorized: [...failedAuth],
+      },
     ],
-    error: [],
-		unauthorized: [...failedAuth],
+    true: [
+      postNewShare, {
+        success: [
+          copyShareToRoom,
+          moveNewShare,
+        ],
+        error: [],
+        unauthorized: [...failedAuth],
+      },
+    ],
   },
   set('state:roominfo.share_dialog.new_share', false)
 ]
@@ -180,7 +196,7 @@ export var doneEditingRoom = [
   updateRoom, {
     success: [],
     error: [],
-		unauthorized: [...failedAuth],
+    unauthorized: [...failedAuth],
   },
 ]
 
@@ -201,6 +217,10 @@ export var setRoomType = [
   setShareRoomType,
 ]
 
+function moveNewShare({input, state}) {
+  state.unset(`roominfo.room.shares.${input.tempKey}`);
+}
+
 function setShareRoomOption({input, state}) {
   var note = state.get(`roominfo.share_dialog.share.note`)
   if (input.value) {
@@ -211,9 +231,10 @@ function setShareRoomOption({input, state}) {
 }
 
 function copyShareToRoom({input, state}) {
-  let shareKey = state.get('roominfo.share_dialog.share._key');
+  let newShare = state.get('roominfo.share_dialog.new_share');
   let editShare = state.get(`roominfo.share_dialog.share`)
-  state.set(`roominfo.room.shares.${shareKey}`, editShare);
+  let shareKey = newShare ? input.share._key : editShare._key;
+  state.set(`roominfo.room.shares.${shareKey}`, newShare ? input.share : editShare);
 }
 
 // Delete the share in the DB, room-share edge, and share-person edges
@@ -221,10 +242,10 @@ function deleteShare({input, state, services, output}) {
   let to = input.share._id;
   let from = state.get('roominfo.room._id') 
   return services.http.delete('/nodes?id='+input.share._id).then((results) => {
-    return services.http.delete('/edges?to='+to+'&from='+from).then((results) => {
+    return services.http.delete('/edges?_to='+to+'&_from='+from).then((results) => {
       return Promise.each(Object.keys(input.share.persons), (key, i) => {
         let person = input.share.persons[key];
-        return services.http.delete('/edges?to='+person._id+'&from='+input.share._id)
+        return services.http.delete('/edges?_to='+person._id+'&_from='+input.share._id)
       }).then(() => {
         return output.success()
       })
@@ -234,14 +255,44 @@ function deleteShare({input, state, services, output}) {
     })
   }).catch((error) => {
     console.log(error);
-		if (error.status === 401) {
-			return output.unauthorized({})
-		}
-		return output.error({error})
+    if (error.status === 401) {
+      return output.unauthorized({})
+    }
+    return output.error({error})
   })
 }
 deleteShare.async = true;
 deleteShare.outputs = ['success', 'error', 'unauthorized']
+
+function postNewShare({input, state, services, output}) {
+  let editShare = state.get('roominfo.share_dialog.share');
+  let tempKey = editShare._key;
+  let room = state.get('roominfo.room')
+  let meta;
+  let example = _.cloneDeep(editShare)
+  delete example.persons
+  delete example._key
+  return services.http.post('/nodes', example).then((meta) => {
+    example = Object.assign(example, meta.result);
+    example.persons = editShare.persons;
+    return services.http.post('/edges?_to='+meta.result._id+'&_from='+room._id+'&_type=room-share').then((results) => {
+// Add persons that are new 
+      return Promise.each(Object.keys(editShare.persons), (key) => { 
+        return services.http.post('/edges?_to='+encodeURIComponent('nodes/'+key)+'&_from='+encodeURIComponent(meta.result._id)+'&_type=share-person').then((res) => {
+          return output.success({share: example, tempKey})
+        })
+      })
+    })
+  }).catch((error) => {
+    console.log(error);
+    if (error.status === 401) {
+      return output.unauthorized({})
+    }
+    return output.error({error})
+  })
+}
+postNewShare.async = true;
+postNewShare.outputs = ['success', 'error', 'unauthorized']
 
 function updateShare({input, state, services, output}) {
   let editShare = state.get('roominfo.share_dialog.share');
@@ -251,13 +302,12 @@ function updateShare({input, state, services, output}) {
   delete example._rev
   delete example._id
   delete example._key
-  console.log('PUTTING ROOM UPDATES')
+  console.log('PUTTING ROOM UPDATES', editShare._id, example)
   return services.http.put('/nodes?id='+editShare._id, example).then((res) => {
 // Add persons that are new 
     return Promise.each(Object.keys(editShare.persons), (key) => { 
       if (!share.persons[key]) {
-        console.log('POSTING NEW PERSON EDGES')
-        return services.http.post('/edges?to=nodes/'+key+'&from='+editShare._id+'&type=share-person')
+        return services.http.post('/edges?_to=nodes/'+key+'&_from='+editShare._id+'&_type=share-person')
         .catch((err) => {
           console.log(err)
           return output.error({error:err})
@@ -269,7 +319,7 @@ function updateShare({input, state, services, output}) {
       return Promise.each(Object.keys(share.persons), (key) => { 
         if (!editShare.persons[key]) {
           console.log('POSTING REMOVING DELETED EDGES')
-          return services.http.delete('/edges?to='+key+'&from='+editShare._key)
+          return services.http.delete('/edges?_to='+key+'&_from='+editShare._key)
           .catch((err) => {
             console.log(err)
             return output.error({error:err})
@@ -282,10 +332,10 @@ function updateShare({input, state, services, output}) {
     return output.success({})
   }).catch((error) => {
     console.log(error);
-		if (error.status === 401) {
-			return output.unauthorized({})
-		}
-		return output.error({error})
+    if (error.status === 401) {
+      return output.unauthorized({})
+    }
+    return output.error({error})
   })
 }
 updateShare.async = true;
@@ -306,12 +356,9 @@ function unsetShare({input, state}) {
 
 function addTempShare({input, state, services, output}) {
   let shares = state.get('roominfo.room.shares')
-  let shareNumber = _.reduce(shares, (acc, sh, i) => {
-    let num = parseInt(sh.share || sh.name.split('-')[1].trim());
-    if (acc > num) return acc;
-    return num
-  }, 0) + 1;
+  let shareNumber = uuid();
   let room = state.get('roominfo.room')
+//      Object.assign(share, res.result)
   let username = state.get('login.user.name')
   let share = {
     percent: '',
@@ -321,32 +368,20 @@ function addTempShare({input, state, services, output}) {
     using: '',
     stations: '',
     description: '',
-    note: '',
+    note: JSON.stringify({share: shareNumber.toString()}),
     building: room.building,
     floor: room.floor,
-    room: room.name,
+    room: room.room,
     share: shareNumber.toString(),
+    persons: {},
     _type: 'share',
+    _key: uuid(),
     edit: { 
       date: new Date(), 
       username,
     }
   }
-  return services.http.post('/nodes', share).then((res) => {
-    return services.http.post('/edges?to='+res.result._id+'&from='+room._id+'&type=room-share').then((results) => {
-      Object.assign(share, res.result)
-      return output.success({share})
-    }).catch((error) =>{
-      console.log(error);
-      return output.error({error})
-    })
-  }).catch((error) =>{
-		console.log(error)
-		if (error.status === 401) {
-			return output.unauthorized({})
-		}
-    return output.error({error})
-  })
+  return output.success({share})
 }
 addTempShare.async = true;
 addTempShare.outputs = ['success', 'error', 'unauthorized'];
@@ -389,10 +424,10 @@ function updateRoom({input, state, output, services}) {
     return output.success()
   }).catch((error) =>{
     console.log(error);
-		if (error.status === 401) {
-			return output.unauthorized({})
-		}
-		return output.error({error})
+    if (error.status === 401) {
+      return output.unauthorized({})
+    }
+    return output.error({error})
   })
 }
 updateRoom.async = true;
@@ -429,15 +464,15 @@ function setPerson({input, state}) {
 
 function getPersonFromText({input, state, output, services}) {
   if (input.match._id) return output.success({person:input.match})
-  return services.http.get('/nodes?name='+input.text).then((results)=>{
-    if (results.result.length > 0) return output.success({person: results.result[0]})
-    return output.error({person: results.result[0]})
+  return services.http.get('/nodes?name='+input.text).then((result)=>{
+    if (result.result.length > 0) return output.success({person: result})
+    return output.error({error: 'An error occurred while trying to find person by text', person: result})
   }).catch((error) => {
     console.log(error);
-		if (error.status === 401) {
-			return output.unauthorized({})
-		}
-		return output.error({error})
+    if (error.status === 401) {
+      return output.unauthorized({})
+    }
+    return output.error({error})
   })
 }
 getPersonFromText.async = true;
@@ -446,14 +481,14 @@ getPersonFromText.outputs = ['success', 'error', 'unauthorized'];
 function createPersonEdge({input, state, output, services}) {
   let to = input.match._id;
   let from = input.share._id;
-  return services.http.post('/edges?to='+to+'&from='+from+'&type=share-person').then((results) => {
+  return services.http.post('/edges?_to='+to+'&_from='+from+'&_type=share-person').then((results) => {
     return output.success()
   }).catch((error) => {
     console.log(error);
-		if (error.status === 401) {
-			return output.unauthorized({})
-		}
-		return output.error({error})
+    if (error.status === 401) {
+      return output.unauthorized({})
+    }
+    return output.error({error})
   })
 }
 createPersonEdge.async = true;
@@ -462,7 +497,7 @@ createPersonEdge.outputs = ['success', 'error', 'unauthorized'];
 function deletePersonEdge({input, state, output, services}) {
   let from = input.share._id;
   let to = input.person._id;
-  return services.http.delete('/edges?from='+from+'&to='+to).then((results) => {
+  return services.http.delete('/edges?_from='+from+'&_to='+to).then((results) => {
     return output.success()
   }).catch((error) => {
     console.log(error);
@@ -474,7 +509,7 @@ deletePersonEdge.outputs = ['success', 'error', 'unauthorized'];
 
 function getPersonMatches({input, state, output, services}) {
   if (input.text !== '') {
-    return services.http.get('/search?text='+input.text+'&type=person').then((results) => {
+    return services.http.get('/search?text='+input.text+'&_type=person').then((results) => {
       return output.success({matches: results.result.filter((match) => {return match._type === 'person'})})
     }).catch((error) => {
       console.log(error);
@@ -508,10 +543,10 @@ function putNewPerson({input, state, output, services}) {
     return output.success({person: Object.assign(results.result, person), to: results.result._id})
   }).catch((error) => {
     console.log(error);
-		if (error.status === 401) {
-			return output.unauthorized({})
-		}
-		return output.error({error})
+    if (error.status === 401) {
+      return output.unauthorized({})
+    }
+    return output.error({error})
   })
 }
 putNewPerson.async = true;
@@ -546,10 +581,10 @@ function putRoomAttributes({input, state, services, output}) {
     return output.success({})
   }).catch((error) => {
     console.log(error);
-		if (error.status === 401) {
-			return output.unauthorized({})
-		}
-		return output.error({error})
+    if (error.status === 401) {
+      return output.unauthorized({})
+    }
+    return output.error({error})
   })
 }
 putRoomAttributes.async = true

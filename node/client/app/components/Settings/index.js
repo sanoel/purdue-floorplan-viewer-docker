@@ -33,7 +33,7 @@ export default connect({
         window.scroll({ top: screen.height, left: 0, behavior: 'smooth' })
       }
     }
-
+// ()=>this.props.importRooms()}
     render() {
       let dataBackup = (
         <div>
@@ -58,7 +58,7 @@ export default connect({
             <div className={cx('import-room-data-div')}>
               <button 
                 className= {cx('pure-button', stylesLogin['purdue-button'], 'import-room-data-button', {'display-none': this.props.importing_rooms})}
-                onClick={()=>this.props.importRooms()}>
+                onClick={()=> this.props.smasFileDropped({})} >
                 Generate SMAS Report 
               </button>
               <button 

@@ -4,12 +4,12 @@ import { failedAuth } from '../Login/chains';
 export let updateSearchBarInput = [
   copy('input:text', 'state:searchbar.text'),
   deriveSuggestionCardInfo, {
-		success: [
-			copy('input:results', 'state:searchbar.results'),
-		],
-		error: [],
-		unauthorized: [...failedAuth],
-	}
+    success: [
+      copy('input:results', 'state:searchbar.results'),
+    ],
+    error: [],
+    unauthorized: [...failedAuth],
+  }
 ]
 
 export function deriveSuggestionCardInfo({input, state, output, services}) {
@@ -26,17 +26,17 @@ export function deriveSuggestionCardInfo({input, state, output, services}) {
       searchResults.push.apply(searchResults, queryResults.floorplan)
       searchResults.push.apply(searchResults, queryResults.person)
       searchResults.push.apply(searchResults, queryResults.room)
-			output.success({results: searchResults})
+      output.success({results: searchResults})
     }).catch((error) => {
       console.log(error);
-			if (error.status === 401) {
-				return output.unauthorized({})
-			}
-			return output.error({error})
+      if (error.status === 401) {
+        return output.unauthorized({})
+      }
+      return output.error({error})
     })
   } else {
-		return output.success({results: []});
-	}
+    return output.success({results: []});
+  }
 }
 deriveSuggestionCardInfo.async = true;
 deriveSuggestionCardInfo.outputs = ['success', 'error', 'unauthorized'];
