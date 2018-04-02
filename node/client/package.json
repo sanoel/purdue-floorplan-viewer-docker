@@ -16,6 +16,7 @@
     "bcrypt": "^1.0.3",
     "cas-authentication": "0.0.8",
     "cerebral-view-react": "^0.12.12",
+    "cors": "^2.8.4",
     "csvjson": "^4.1.2",
     "express-session": "^1.15.6",
     "helmet": "^3.8.2",

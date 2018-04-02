@@ -20,6 +20,7 @@ var express = require('express');
 var app = express();
 var helmet = require('helmet');
 var bodyParser = require('body-parser');
+var cors = require('cors')
 
 const relativePathToFloorplans = '/img/svgFloorPlans/svgFloorPlansSim/svgoManSvgo/';
 
@@ -27,6 +28,7 @@ var nodes = db.collection('nodes');
 var edges = db.collection('edges');
 var putRoute = '';
 
+app.use(cors());
 app.use(express.static(contentBase));
 app.use(bodyParser.urlencoded());
 app.use(bodyParser.json());
@@ -218,7 +220,7 @@ app.get(relativePathToFloorplans, (req, res) => {
 })
 
 app.get('/edges/', ensureAuthenticated(), (req, res) => {
-  if (!req.query._from && req.query._to) return res.send('either _to or _from must be specified in an edge query');
+  if (!(req.query._from || req.query._to)) return res.send('either _to or _from must be specified in an edge query');
   let edgeCollection = db.collection('edges')
   let bnd, key;
   db.query(aql`
