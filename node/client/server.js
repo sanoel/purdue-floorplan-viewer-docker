@@ -20,7 +20,6 @@ var express = require('express');
 var app = express();
 var helmet = require('helmet');
 var bodyParser = require('body-parser');
-var cors = require('cors')
 
 const relativePathToFloorplans = '/img/svgFloorPlans/svgFloorPlansSim/svgoManSvgo/';
 
@@ -28,7 +27,6 @@ var nodes = db.collection('nodes');
 var edges = db.collection('edges');
 var putRoute = '';
 
-app.use(cors());
 app.use(express.static(contentBase));
 app.use(bodyParser.urlencoded());
 app.use(bodyParser.json());
@@ -220,7 +218,7 @@ app.get(relativePathToFloorplans, (req, res) => {
 })
 
 app.get('/edges/', ensureAuthenticated(), (req, res) => {
-  if (!(req.query._from || req.query._to)) return res.send('either _to or _from must be specified in an edge query');
+  if (!req.query._from && req.query._to) return res.send('either _to or _from must be specified in an edge query');
   let edgeCollection = db.collection('edges')
   let bnd, key;
   db.query(aql`
@@ -381,6 +379,39 @@ app.get('/smas', ensureAuthenticated(), (req, res) => {
     res.json(result);
     }
   );
+})
+
+app.get('/filter', ensureAuthenticated(), (req, res) => {
+	let filters = [];
+	let buildings = (req.query.buildings) ? req.query.buildings.split(',') : [];
+
+	if (req.query.roomAreaMax) filters.push(`FILTER +p.vertices[2].area <= ${req.query.roomAreaMax}`)
+	if (req.query.roomAreaMin) filters.push(`FILTER +p.vertices[2].area >= ${req.query.roomAreaMin}`)
+	if (req.query.shareAreaMax) filters.push(`FILTER +p.vertices[3].area <= ${req.query.shareAreaMax}`)
+	if (req.query.shareAreaMin) filters.push(`FILTER +p.vertices[3].area >= ${req.query.shareAreaMin}`)
+	if (req.query.stationsMax) filters.push(`FILTER +p.vertices[2].stations <= ${req.query.stationsMax}`)
+	if (req.query.stationsMin) filters.push(`FILTER +p.vertices[2].stations >= ${req.query.stationsMin}`)
+
+	if (req.query.buildings) filters.push(...req.query.buildings(i => `FILTER p.vertices[3].name == ${i}`))
+
+	if (req.query.assigned) filters.push(...req.query.assigned(i => `FILTER p.vertices[3].assigned == ${i}`))
+	if (req.query.using) filters.push(...req.query.using(i => `FILTER p.vertices[3].using == ${i}`))
+	if (req.query.types) filters.push(`FILTER ${Object.keys(types)} ANY == p.vertices[3].type`)
+
+	if (req.query.attributes) filters.push(...req.query.attributes(i => `FILTER p.vertices[2].attributes.${i} == true`))
+
+	db.query(aql`
+	FOR buildings IN ${buildings}
+		FOR v,e,p IN 0..4
+		OUTBOUND ${node}
+		${filters}
+		RETURN DISTINCT(p.vertices[${req.query.level}])
+	`).then((result) => {
+		res.json(result)
+	}).catch((err) => {
+		console.log('filter query failed', err)
+		res.send(result)
+	})
 })
 
 var server = app.listen(thePort, function () {
