@@ -42,6 +42,17 @@ RUN . /root/.nvm/nvm.sh \
     && yarn global add mocha
     # You can put any global NPM installs here
 
+##############################################################################
+# install some oracle junk required for the node module oracledb. Necessary in admin container so I have it when I initialize the database.
+COPY ./prepOracledbLib.sh /prepOracledbLib.sh
+COPY ./instantclient-basic-linux.x64-12.2.0.1.0.zip /instantclient-basic-linux.x64-12.2.0.1.0.zip
+COPY ./instantclient-sdk-linux.x64-12.2.0.1.0.zip /instantclient-sdk-linux.x64-12.2.0.1.0.zip
+RUN chmod u+x /prepOracledbLib.sh
+RUN /prepOracledbLib.sh
+ENV LD_LIBRARY_PATH=/opt/oracle/instantclient:$LD_LIBRARY_PATH
+
+
+
 COPY "./.vimrc" "/root/.vimrc"
 COPY "./do-yarn.sh" "/bin/do-yarn.sh"
 COPY "./do-yarn-install.sh" "/bin/do-yarn-install.sh"

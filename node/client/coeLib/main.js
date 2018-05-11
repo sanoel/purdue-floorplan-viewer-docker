@@ -29,7 +29,7 @@ oracledb.maxRows = 100000;
 
 
 function addUsers() {
-  let path = '../passwords.csv';
+  let path = './passwords.csv';
   let users = {};
   let content = csvjson.toObject(fs.readFileSync(path, 'utf8'), {delimiter: ',', quote: '"'});
   return Promise.map(content, (row) => {
@@ -131,7 +131,6 @@ const authorizations = db.collection('authorizations');
 let shares;
 
 dbPromise
-/* WARNING: THIS WILL DELETE EACH OF THE COLLECTIONS IN ALL LIKELYHOOD
 .then(() => { console.log('Creating database collections...'); 
 return nodes.create() })
 .catch(() => { return nodes.drop()}).then(() => {return nodes.create() }) 
@@ -141,6 +140,7 @@ return nodes.create() })
 .catch(() => { return users.drop()}).then(() => {return users.create() })
 .then(() => { return authorizations.create() })
 .catch(() => { return authorizations.drop()}).then(() => {return authorizations.create() })
+/* WARNING: THIS WILL DELETE EACH OF THE COLLECTIONS IN ALL LIKELYHOOD
 */
 
 .then(() => { console.log('Adding users from passwords.csv...'); return addUsers() })

@@ -343,8 +343,9 @@ function findKeysDataRoomPersonEdges(nodes, edges, keysData) {
     return Promise.resolve(nodes.byExample(room)).call('next').then(function(room)  {
       return Promise.resolve(nodes.byExample(keyholder)).call('next').then(function(keyholder)  {
         if (room && keyholder) {
-          var edge = {_from: room._id, _to: keyholder._id, _type: 'share-person-keyholder'}
+          var edge = {_from: room._id, _to: keyholder._id, _type: 'room-person'}
           return Promise.resolve(edges.byExample(edge)).call('next').then(function(ed)  {
+            console.log('!ed', !ed)
             if (!ed) return edges.save(edge)
             return;
           })
@@ -355,8 +356,9 @@ function findKeysDataRoomPersonEdges(nodes, edges, keysData) {
           supervisor = { name: supervisor[0] + supervisor.substring(1, supervisor.length).toLowerCase() }
           return Promise.resolve(nodes.byExample(supervisor)).call('next').then(function(supervisor)  {
             if (room && supervisor) {
-              var edge = {_from: room._id, _to: supervisor._id, _type: 'share-person-supervisor'}
+              var edge = {_from: room._id, _to: supervisor._id, _type: 'room-person'}
               return Promise.resolve(edges.byExample(edge)).call('next').then(function(ed)  {
+                console.log('!ed', !ed)
                 if (!ed) return edges.save(edge);
                 return;
               })

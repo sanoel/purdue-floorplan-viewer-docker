@@ -15,6 +15,9 @@ services:
       - NODE_ENV=${NODE_ENV:-development}
       - DEBUG=${DEBUG:-""}
       - ARANGODB_SERVER=http://arangodb:8529
+      - LD_LIBRARY_PATH=/opt/oracle/instantclient:$LD_LIBRARY_PATH
+      - OCI_LIB_DIR=/opt/oracle/instantclient
+      - OCI_INC_DIR=/opt/oracle/instantclient/sdk/include
 
   # Arango is the main backend where core data and graph is stored
   arangodb:

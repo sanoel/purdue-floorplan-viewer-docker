@@ -43,6 +43,7 @@ dbPromise
 .catch(() => { return nodes.drop()}).then(() => {return nodes.create() }) 
 */
 .then(() => { console.log('Generating edges from keyholders to rooms...'); return coeLib.findKeysDataRoomPersonEdges(nodes, edges, keysData)})
+//.then(() => { console.log('Creating people from keys data...'); return coeLib.getKeysDataPeople(keysData)})
 .catch((err) => { console.error(err)})
 //Create fulltext indexes
 .then(() => { console.log('creating fulltext index...'); return nodes.createFulltextIndex('fulltext')})

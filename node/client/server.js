@@ -227,7 +227,7 @@ app.get('/edges/', ensureAuthenticated(), (req, res) => {
   let bnd, key;
   db.query(aql`
     FOR v, e, p IN 0..1 
-      OUTBOUND ${req.query._from ? req.query._from : req.query._to}
+      ANY ${req.query._from ? req.query._from : req.query._to}
       edges
       FILTER v._type == ${req.query._type}
     RETURN v`
