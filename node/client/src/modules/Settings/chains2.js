@@ -107,6 +107,7 @@ function getCurrentShares({props, state, path, http}) {
   // Loop over rooms. Every existing room should occur once.
 	return Promise.each(Object.keys(props.newShares), (room) => {
 		console.log(i++);
+		if (i > 1200) return
     currentShares[room] = {};
     return http.get('/nodes?name='+room+'&_type=room').then((response) => {
       return http.get('/edges?_from='+response.result[0]._id+'&_type=share').then((result) => {
@@ -183,7 +184,7 @@ function getCurrentShares({props, state, path, http}) {
 		//     fd(csvjson.toCSV(diffs, options), 'SmasChanges-'+dateStr+'.csv')
 		fd(csvjson.toCSV(diffs.smas, options), 'SmasDiffs-'+dateStr+'.csv')
 		fd(csvjson.toCSV(diffs.fpv, options), 'FpvDiffs-'+dateStr+'.csv')
-    return path.success({currentShares})
+    return path.success({currentShares, diffs})
   }).catch((error) => {
     console.log(error)
     if (error.status === 401) {

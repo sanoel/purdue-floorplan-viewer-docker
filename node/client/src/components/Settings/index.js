@@ -10,7 +10,9 @@ import {state, signal } from 'cerebral/tags'
 SmoothScroll.polyfill()
 
 export default connect({
-  // For importing/exporting the data for rooms from/to a JSON file.
+	// For importing/exporting the data for rooms from/to a JSON file.
+	value: state`settings.progress_value`,
+	max: state`settings.progress_max`,
   importing_rooms: state`app.importing_rooms`,
   exporting_rooms: state`app.exporting_rooms`,
   dropzone_hint: state`viewer.dropzone_hint`,
@@ -73,7 +75,10 @@ export default connect({
 
         <div className = {[styles['wrapper'], {'disabled':!this.props.app_ready}].join(' ')}>
           {this.props.loading ? <div className={styles['loading-modal']}>
-            <CircularProgress />
+						<CircularProgress 
+							value={(this.props.value) ? this.props.value : null}
+							max={(this.props.max) ? this.props.max : null}
+						/>
            </div> : null }
           <div className={styles['title']}>Settings</div>
           {dataBackup}

@@ -57,9 +57,15 @@ export let setPersonPage = [
       },
 */
       getSharesFromPerson, {
-        success: [
+				success: [
 					set(state`personinfo.person`, props`person`),
           set(state`personinfo.shares`, props`shares`), 
+					getRoomsFromPerson, {
+						success: [
+							set(state`personinfo.rooms`, props`rooms`)
+						],
+						error: [],
+					},
         ],
         error: [],
         unauthorized: [...failedAuth],
@@ -230,7 +236,7 @@ export function getRoomsFromFloorplan({props, state, http, path}) {
 export function getRoomsFromFloorplans({props, state, http, path}) {
 	console.log(props.floorplans)
 	return Promise.map(props.floorplans || [], (floorplan) => {
-		return http.get('/edges?_type=room&_from='+props.floorplan._id).then((results) => {
+		return http.get('/edges?_type=room_person&_from='+props.floorplan._id).then((results) => {
 			var rooms = {}; 
 			results.result.forEach((res) => {
 				rooms[res.name] = res;

@@ -17,7 +17,6 @@ export default connect({
   matches: state`roomtable.new_room.matches`,
   match: state`roomtable.new_room.selected_match`,
   roomPageRequested: signal`viewer.roomPageRequested`,
-  buildingPageRequested: signal`viewer.roomPageRequested`,
 },
   class ShareTable extends React.Component {
 
@@ -51,14 +50,14 @@ export default connect({
             {this.props.shares.map((share, index) => (
               <TableRow 
                 key={index}
-                onTouchTap={()=>{/*this.props.editing ? null : */this.props.roomPageRequested({room:share.room, building:share.building, floor:share.floor})}}>
+                onTouchTap={()=>{/*this.props.editing ? null : */this.props.roomPageRequested({room:share.building + ' ' +share.room, building:share.building, floor:share.floor})}}>
                 <TableRowColumn
                   style={cellStyle}>
                   {index+1}
                 </TableRowColumn>
                 <TableRowColumn
                   style={cellStyle}>
-                  {share.room}
+                  {share.building + ' ' + share.room}
                 </TableRowColumn>
                 <TableRowColumn
                   style={cellStyle}>

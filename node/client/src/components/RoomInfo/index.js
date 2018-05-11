@@ -22,7 +22,7 @@ export default connect({
 
     render() {
       return (
-				<div className={styles['roominfo']}>
+				<div>
 					{this.props.room ? 
 						<div className={styles['roominfo']}>
 							<InfoTable />
