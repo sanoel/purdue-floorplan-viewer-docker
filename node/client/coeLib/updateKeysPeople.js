@@ -35,14 +35,14 @@ var dbPromise = db.listDatabases()
 
 
 const nodes = db.collection('nodes');
+const edges = db.collection('edges');
 
 dbPromise
 /* WARNING: THIS WILL DELETE THE NODES COLLECTION (ALL OF THE DATA) IN ALL LIKELIHOOD
 .then(() => { console.log('Creating database collections...'); return nodes.create() })
 .catch(() => { return nodes.drop()}).then(() => {return nodes.create() }) 
 */
-.then(() => { console.log('Creating people from keys data...'); return coeLib.getKeysDataPeople(keysData)})
-.then((keysPersons) => { return coeLib.populateCollection(nodes, keysPersons, ['given_name', 'family_name'])})
+.then(() => { console.log('Generating edges from keyholders to rooms...'); return coeLib.findKeysDataRoomPersonEdges(nodes, edges, keysData)})
 .catch((err) => { console.error(err)})
 //Create fulltext indexes
 .then(() => { console.log('creating fulltext index...'); return nodes.createFulltextIndex('fulltext')})
