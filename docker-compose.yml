@@ -46,7 +46,17 @@ services:
     ports:
       - "80:80"
     #  - "443:443"
-    
+  
+  backup:
+    build: ./backup
+    volumes:
+      - arangodb_data:/volumes/arangodb
+      - arangodb_apps_data:/volumes/arangodb_apps
+      - .:/code
+    command: bash
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - ARANGODB_SERVER=http://arangodb:8529
 
 volumes:
   arangodb_data:

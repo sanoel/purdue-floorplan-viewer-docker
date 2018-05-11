@@ -1,0 +1,14 @@
+
+
+# Create a new arango dump nightly at 2 AM
+10 14 * * * arangodump --server.database floorplan-viewer --server.endpoint tcp://floorplans.ecn.purdue.edu:8529 --server.authentication false --output-directory "nightly-arango-dump-$(date "+%m-%d-%y")"
+
+# Remove the stale arango dumps (30 days ago) nightly at 3 AM
+0 3 * * * rm -rf "nightly-arango-dump-$(date --date="30 days ago" +"%m-%d-%y")"
+
+# Run monthly on the 1st of the month (2 AM)
+0 2 1 * * arangodump --server.database floorplan-viewer --server.endpoint tcp://floorplans.ecn.purdue.edu:8529 --server.authentication false --output-directory "monthly-arango-dump-$(date "+%m-%d-%y")"
+
+# Run yearly on the 1st of January (2 AM)
+0 2 1 10 * arangodump --server.database floorplan-viewer --server.endpoint tcp://floorplans.ecn.purdue.edu:8529 --server.authentication false --output-directory "yearly-arango-dump-$(date "+%m-%d-%y")"
+

@@ -348,7 +348,7 @@ app.post('/nodes', ensureAuthenticated(), (req, res) => {
 app.put('/nodes', ensureAuthenticated(), (req, res) => {
   let collection = db.collection('nodes')
   getUserFromToken(req.get('access_token')).then((username) => {
-    console.log('2', username, body)
+    console.log('2', username, req.body)
     var body = req.body;
     body._modifiedDate = Date.now();
     body._modifiedBy = username;
@@ -455,7 +455,7 @@ app.get('/filter', ensureAuthenticated(), (req, res) => {
 	if (req.query.using) filters.push('FILTER '+decodeURIComponent(req.query.using).split(',').map(i => `p.vertices[3].using == '${i}'`).join(' OR '));
 	if (req.query.types) filters.push('FILTER '+decodeURIComponent(req.query.types).split(',').map(i => `p.vertices[3].type == '${i}'`).join(' OR '));
 
-	if (req.query.attributes) filters.push(...decodeURIComponent(req.query.attributes).split(',').map(i => `FILTER p.vertices[2].attributes.${i} == true`))
+	if (req.query.attributes) filters.push(...decodeURIComponent(req.query.attributes).split(',').map(i => `FILTER p.vertices[2].attributes['${i}'] == true`))
 
 	let query = `
 		LET buildings = (FOR doc IN nodes

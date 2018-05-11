@@ -556,7 +556,7 @@ function setRoomAttributes({props, state}) {
 
 function putRoomAttributes({props, state, http, path}) {
   let room = state.get('roominfo.room')
-  return http.put('/nodes?id='+room._id, {attributes: room.attributes}).then((results) => {
+  return http.put('/nodes?_id='+room._id, {attributes: room.attributes}).then((results) => {
     return path.success({})
   }).catch((error) => {
     console.log(error);

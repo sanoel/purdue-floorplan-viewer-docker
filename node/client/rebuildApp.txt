@@ -1,0 +1,13 @@
+Steps:
+
+1. Run the admin container
+docker-compose run --rm admin
+
+2. cd to the app directory
+cd /node/client
+
+3. rebuild
+npm run build
+
+4. restart caddy
+sudo systemctl restart caddy
