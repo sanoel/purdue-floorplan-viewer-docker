@@ -1,12 +1,13 @@
 'use strict'
 var fs = require("fs");
 const path = require('path');
+const smasConnectionConfig = require('./coeLib/smasConnectionConfig.js')
 var Promise = require("promise");
 var concat = require("concat-stream");
 var isDeveloping = process.env.NODE_ENV !== 'production';
 var thePort = isDeveloping ? 3000 : process.env.PORT;
 var contentBase = path.resolve(__dirname, './build');
-var server_addr = process.env.ARANGO_SERVER ? process.env.ARANGO_SERVER : "http://localhost:8529";
+var server_addr = process.env.ARANGODB_SERVER ? process.env.ARANGODB_SERVER : "http://localhost:8529";
 var ignore = console.log("Using DB-Server " + server_addr);
 var oracledb = require('oracledb');
 var Database = require("arangojs");
@@ -20,6 +21,7 @@ var express = require('express');
 var app = express();
 var helmet = require('helmet');
 var bodyParser = require('body-parser');
+var cors = require('cors');
 
 const relativePathToFloorplans = '/img/svgFloorPlans/svgFloorPlansSim/svgoManSvgo/';
 
@@ -27,6 +29,8 @@ var nodes = db.collection('nodes');
 var edges = db.collection('edges');
 var putRoute = '';
 
+app.use(cors());
+app.options('*', cors());
 app.use(express.static(contentBase));
 app.use(bodyParser.urlencoded());
 app.use(bodyParser.json());
@@ -34,16 +38,10 @@ app.use(helmet());
 
 /////////////////////////////////////////////////////////////
 // Purdue SMAS SQL information
-var config = {
-  user: 'collengr',
-  password: 'F30_r4P{pRf6',
-  connectString: 'lpvdbaopr07.itap.purdue.edu:1522/smas.itap.purdue.edu',
-//    externalAuth: false,                                                         
-}
 oracledb.outFormat = oracledb.OBJECT;
 oracledb.maxRows = 100000;
 let connection;
-oracledb.getConnection(config, (err, conn) => {
+oracledb.getConnection(smasConnectionConfig, (err, conn) => {
   if (err) {
     console.log(err.message);
     return;
@@ -76,6 +74,7 @@ function getUserFromToken (token) {
   .then((result) => {
     return result 
   }).catch((err) => {
+    console.log('user not found from token')
     return false
   })
 }
@@ -88,6 +87,7 @@ function ensureAuthenticated () {
     if (token && checkToken(token)) {
       return next()
     }
+    console.log('error 4')
     return res.sendStatus(401)
   }
 }
@@ -177,6 +177,7 @@ passport.deserializeUser(function(id, done) {
 /////////////////////////////////////////////////////////////
 // Login and logout routes
 app.post('/login', (req, res) => {
+  console.log(req.query)
   return db.query(aql`
     FOR doc IN users
     FILTER doc.password == ${req.query.password}
@@ -197,11 +198,14 @@ app.post('/login', (req, res) => {
       .then((auth) => {
         return res.json({token:auth.token})
       }).catch((err) => {
+	console.log('error 1')
         return res.sendStatus(401)
       })
     }
+    console.log('error 2')
     return res.sendStatus(401)
   }).catch((error) => {
+    console.log('error 3')
     return res.sendStatus(401)
   })
 })
@@ -218,7 +222,7 @@ app.get(relativePathToFloorplans, (req, res) => {
 })
 
 app.get('/edges/', ensureAuthenticated(), (req, res) => {
-  if (!req.query._from && req.query._to) return res.send('either _to or _from must be specified in an edge query');
+  if (!(req.query._from || req.query._to)) return res.send('either _to or _from must be specified in an edge query');
   let edgeCollection = db.collection('edges')
   let bnd, key;
   db.query(aql`
@@ -238,6 +242,37 @@ app.get('/edges/', ensureAuthenticated(), (req, res) => {
 })
 
 app.get('/search', ensureAuthenticated(), (req, res) => {
+	let filters = [];
+
+	if (req.query.roomAreaMax) filters.push(`FILTER +p.vertices[2].area <= ${req.query.roomAreaMax}`)
+	if (req.query.roomAreaMin) filters.push(`FILTER +p.vertices[2].area >= ${req.query.roomAreaMin}`)
+	if (req.query.shareAreaMax) filters.push(`FILTER +p.vertices[3].area <= ${req.query.shareAreaMax}`)
+	if (req.query.shareAreaMin) filters.push(`FILTER +p.vertices[3].area >= ${req.query.shareAreaMin}`)
+	if (req.query.stationsMax) filters.push(`FILTER +p.vertices[3].stations <= ${req.query.stationsMax}`)
+	if (req.query.stationsMin) filters.push(`FILTER +p.vertices[3].stations >= ${req.query.stationsMin}`)
+
+	if (req.query.buildings) filters.push('FILTER '+decodeURIComponent(req.query.buildings).split(',').map(i => `p.vertices[0].name == '${i}'`).join(' OR '));
+//	if (req.query.buildings) filters.push(`FILTER [${decodeURIComponent(req.query.buildings).split(',')}] ANY == p.vertices[0].name`);
+
+	if (req.query.assigned) filters.push('FILTER '+decodeURIComponent(req.query.assigned).split(',').map(i => `p.vertices[3].assigned == '${i}'`).join(' OR '));
+	if (req.query.using) filters.push('FILTER '+decodeURIComponent(req.query.using).split(',').map(i => `p.vertices[3].using == '${i}'`).join(' OR '));
+	if (req.query.types) filters.push('FILTER '+decodeURIComponent(req.query.types).split(',').map(i => `p.vertices[3].type == '${i}'`).join(' OR '));
+
+	if (req.query.attributes) filters.push(...decodeURIComponent(req.query.attributes).split(',').map(i => `FILTER p.vertices[2].attributes.${i} == true`))
+
+	let query = `
+		LET buildings = (FOR doc IN nodes
+			FILTER doc._type == 'building'
+			RETURN doc._id)
+		FOR building IN buildings
+			FOR v,e,p IN 0..4
+				OUTBOUND building
+				edges
+				${filters.join(' ')}
+				RETURN DISTINCT(p.vertices[${req.query.level}])
+	`
+	console.log("QUERY", query)
+
   let collection = db.collection('nodes')
   collection.fulltext("fulltext", 'prefix:'+req.query.text.split(' ').join(',prefix:')).then((cursor) => {
     cursor.all().then((results)=> {
@@ -251,8 +286,10 @@ app.get('/search', ensureAuthenticated(), (req, res) => {
 
 app.get('/nodes', ensureAuthenticated(), (req, res) => {
   let collection = db.collection('nodes')
-  collection.byExample({ _type: req.query._type, name: decodeURIComponent(req.query.name) })
-  .then((cursor) => {
+  collection.byExample({ 
+    _type: req.query._type, 
+    name: decodeURIComponent(req.query.name) 
+  }).then((cursor) => {
     cursor.all().then((result) => {
       return res.json(result)
     })
@@ -374,43 +411,70 @@ app.get('/stuff', ensureAuthenticated(), (req, res) => {
 app.get('/smas', ensureAuthenticated(), (req, res) => {
   connection.execute(
     `SELECT SHARE_INTERNAL_NOTE,TOTAL_AREA,BUILDING_ABBREVIATION,ROOM_ID,ROOM_NUMBER,SHARE_NUMBER,SHARE_ID,SHARE_PERCENT,SHARE_AREA,STATIONS,DESCRIPTION,ROOM_CLASSIFICATION,ASSIGNED_DEPT_ABBREVIATION,USING_DEPT_ABBREVIATION from OSIRIS.ROOM_CURRENT WHERE BUILDING_ABBREVIATION IN ('ARMS', 'GRIS', 'HAMP', 'ME', 'MSEE', 'WANG', 'EE') ORDER BY BUILDING_ABBREVIATION `,
-    (err, result) => {
-      if (err) { console.error(err.message); return; }                         
-    res.json(result);
-    }
-  );
+  (err, result) => {
+    if (err) { 
+	    console.error(err.message);
+	    console.log('Attempting to reconnect to oracle db...')
+			oracledb.getConnection(config, (err, conn) => {
+				if (err) {
+					console.log(err.message);
+					return;
+				}
+				connection = conn;
+				console.log('Connection was successful!');
+				connection.execute(
+				  `SELECT SHARE_INTERNAL_NOTE,TOTAL_AREA,BUILDING_ABBREVIATION,ROOM_ID,ROOM_NUMBER,SHARE_NUMBER,SHARE_ID,SHARE_PERCENT,SHARE_AREA,STATIONS,DESCRIPTION,ROOM_CLASSIFICATION,ASSIGNED_DEPT_ABBREVIATION,USING_DEPT_ABBREVIATION from OSIRIS.ROOM_CURRENT WHERE BUILDING_ABBREVIATION IN ('ARMS', 'GRIS', 'HAMP', 'ME', 'MSEE', 'WANG', 'EE') ORDER BY BUILDING_ABBREVIATION `,
+				(err, result) => {
+					if (err) {
+						console.log(err.message);
+						return;
+					}
+					res.json(result);
+				})
+			})
+		}
+	  res.json(result);
+	})
 })
 
 app.get('/filter', ensureAuthenticated(), (req, res) => {
+	console.log(req.query)
 	let filters = [];
-	let buildings = (req.query.buildings) ? req.query.buildings.split(',') : [];
 
 	if (req.query.roomAreaMax) filters.push(`FILTER +p.vertices[2].area <= ${req.query.roomAreaMax}`)
 	if (req.query.roomAreaMin) filters.push(`FILTER +p.vertices[2].area >= ${req.query.roomAreaMin}`)
 	if (req.query.shareAreaMax) filters.push(`FILTER +p.vertices[3].area <= ${req.query.shareAreaMax}`)
 	if (req.query.shareAreaMin) filters.push(`FILTER +p.vertices[3].area >= ${req.query.shareAreaMin}`)
-	if (req.query.stationsMax) filters.push(`FILTER +p.vertices[2].stations <= ${req.query.stationsMax}`)
-	if (req.query.stationsMin) filters.push(`FILTER +p.vertices[2].stations >= ${req.query.stationsMin}`)
+	if (req.query.stationsMax) filters.push(`FILTER +p.vertices[3].stations <= ${req.query.stationsMax}`)
+	if (req.query.stationsMin) filters.push(`FILTER +p.vertices[3].stations >= ${req.query.stationsMin}`)
 
-	if (req.query.buildings) filters.push(...req.query.buildings(i => `FILTER p.vertices[3].name == ${i}`))
+	if (req.query.buildings) filters.push('FILTER '+decodeURIComponent(req.query.buildings).split(',').map(i => `p.vertices[0].name == '${i}'`).join(' OR '));
+//	if (req.query.buildings) filters.push(`FILTER [${decodeURIComponent(req.query.buildings).split(',')}] ANY == p.vertices[0].name`);
 
-	if (req.query.assigned) filters.push(...req.query.assigned(i => `FILTER p.vertices[3].assigned == ${i}`))
-	if (req.query.using) filters.push(...req.query.using(i => `FILTER p.vertices[3].using == ${i}`))
-	if (req.query.types) filters.push(`FILTER ${Object.keys(types)} ANY == p.vertices[3].type`)
+	if (req.query.assigned) filters.push('FILTER '+decodeURIComponent(req.query.assigned).split(',').map(i => `p.vertices[3].assigned == '${i}'`).join(' OR '));
+	if (req.query.using) filters.push('FILTER '+decodeURIComponent(req.query.using).split(',').map(i => `p.vertices[3].using == '${i}'`).join(' OR '));
+	if (req.query.types) filters.push('FILTER '+decodeURIComponent(req.query.types).split(',').map(i => `p.vertices[3].type == '${i}'`).join(' OR '));
 
-	if (req.query.attributes) filters.push(...req.query.attributes(i => `FILTER p.vertices[2].attributes.${i} == true`))
+	if (req.query.attributes) filters.push(...decodeURIComponent(req.query.attributes).split(',').map(i => `FILTER p.vertices[2].attributes.${i} == true`))
 
-	db.query(aql`
-	FOR buildings IN ${buildings}
-		FOR v,e,p IN 0..4
-		OUTBOUND ${node}
-		${filters}
-		RETURN DISTINCT(p.vertices[${req.query.level}])
-	`).then((result) => {
+	let query = `
+		LET buildings = (FOR doc IN nodes
+			FILTER doc._type == 'building'
+			RETURN doc._id)
+		FOR building IN buildings
+			FOR v,e,p IN 0..4
+				OUTBOUND building
+				edges
+				${filters.join(' ')}
+				RETURN DISTINCT(p.vertices[${req.query.level}])
+	`
+	console.log("QUERY", query)
+
+	db.query({query}).then(cursor => cursor.all()).then((result) => {
 		res.json(result)
 	}).catch((err) => {
 		console.log('filter query failed', err)
-		res.send(result)
+		res.json(err)
 	})
 })
 

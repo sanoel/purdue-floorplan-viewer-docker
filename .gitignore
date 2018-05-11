@@ -8,3 +8,6 @@ resources/
 node/client/generatePasswords.js
 node/client/users.csv
 node/client/passwords.csv
+node/client/coeLib/passwords.csv
+node/client/coeLib/keys-data.json
+node/client/coeLib/smasConnectionConfig.js

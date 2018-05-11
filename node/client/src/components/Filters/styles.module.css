@@ -1,0 +1,29 @@
+.filters {
+}
+
+.clear_filters {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	cursor: pointer;
+	-webkit-text-fill-color: #fff;
+	padding: 5px;
+	color: #fff;
+}
+.minMaxDiv {
+	display: flex;
+	justify-content: space-evenly;
+}
+.minMaxText {
+	border-radius: 3px;
+	border: 1px solid #000;
+	padding: 0px 5px 0px 5px;
+}
+.filtersAppliedIcon {
+	display: flex;
+	align-items: center;
+	padding: 3px;
+}
+.subheader {
+	display: flex;
+}

@@ -1,0 +1,64 @@
+.share-dialog {
+  display:flex;
+  flex-direction: column;
+}
+.assigned-people {
+  display: flex;
+  align-items: center;
+  margin: 5px;
+}
+.assigned-people-title {
+  padding-right: 10px;
+}
+.assigned-people-textfield {
+
+}
+.room-type {
+  margin: 5px;
+}
+.room-type-dropdown {
+  width: auto;
+}
+.room-type-title {
+
+}
+.share {
+  display: flex;
+  align-items: center;
+}
+.share-title {
+  padding-right: 10px;
+}
+.share-textfield {
+
+}
+.stations {
+  display: flex;
+  align-items: center;
+  margin: 5px;
+}
+.stations-text {
+
+}
+.stations-title {
+  padding-right: 10px;
+}
+.department-assigned {
+  margin: 5px;
+}
+.department-using {
+  margin: 5px;
+}
+.delete {
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  cursor: pointer;
+}
+.title-container {
+  display: flex;
+  justify-content: center;
+}
+.title {
+  flex: 1;
+}

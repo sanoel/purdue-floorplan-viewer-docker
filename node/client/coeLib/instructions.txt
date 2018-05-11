@@ -1,0 +1,3 @@
+1. In order to run main.js (namely to connect to the SMAS oracle db), one must install Oracle Instant Client. The script at /node/prepOracledbLib.sh is used to do this. Occasionally, one must manually EXPORT LD_LIBRARY_PATH as in that script and then reinstall.
+
+http://www.oracle.com/technetwork/topics/linuxx86-64soft-092277.html#ic_x64_inst 

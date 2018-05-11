@@ -1,0 +1,60 @@
+.tooltip {
+	pointer-events:none; /*let mouse events pass through*/
+	opacity:1;
+	transition: opacity 0.3s;
+	text-shadow:1px 1px 0px gray;
+	background: black;
+	border-radius: 3px;
+	position: absolute;
+	max-width: 8em;
+	text-align:center;
+	font-size: 25px;
+	height: 30px;
+	padding: 5px;
+}
+.wrapper {
+	display: flex;
+	flex-direction: column;
+  border: 1px solid black;
+	flex: 1;
+	width: 100%;
+}
+
+.title {
+  background: #000000;
+  color: #ffffff;
+}
+
+.floorplans {
+	display: flex;
+	flex: 1;
+}
+
+.floorplans-error {
+
+}
+
+.floorplan-div-container {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+  border-top: 1px solid black;
+  background: #f4f4f4;
+  color: #ffffff;
+}
+
+.floorplan-title {
+  line-height: 10%;
+  background: #fefefe;
+}
+
+.floorplan-title p {
+  color: #808080; /* gray */
+  font-family: "Times New Roman", Times, serif;
+  font-style: italic;
+}
+
+.floorplan-svg {
+  width: 100%;
+	flex: 1;
+}
