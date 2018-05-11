@@ -338,13 +338,12 @@ function findSmasSharePersonEdges(nodes, edges, smasShares) {
 // master keys, etc); 
 function findKeysDataRoomPersonEdges(nodes, edges, keysData) {
   return Promise.each(keysData, function(row, i) {
-    var room = { name: row['BUILDING_ABBREVIATION'] + ' ' + row['ROOM NUMBER'] }
+    var room = { name: row['BUILDING'] + ' ' + row['ROOM NUMBER'] }
     var keyholder = { name: row['FIRST'] + ' ' + row['LAST NAME'] }
     return Promise.resolve(nodes.byExample(room)).call('next').then(function(room)  {
       return Promise.resolve(nodes.byExample(keyholder)).call('next').then(function(keyholder)  {
-				if (room && keyholder) {
+        if (room && keyholder) {
           var edge = {_from: room._id, _to: keyholder._id, _type: 'share-person-keyholder'}
-					console.log('1', edge, keyholder)
           return Promise.resolve(edges.byExample(edge)).call('next').then(function(ed)  {
             if (!ed) return edges.save(edge)
             return;
@@ -357,7 +356,6 @@ function findKeysDataRoomPersonEdges(nodes, edges, keysData) {
           return Promise.resolve(nodes.byExample(supervisor)).call('next').then(function(supervisor)  {
             if (room && supervisor) {
               var edge = {_from: room._id, _to: supervisor._id, _type: 'share-person-supervisor'}
-							console.log('2', edge)
               return Promise.resolve(edges.byExample(edge)).call('next').then(function(ed)  {
                 if (!ed) return edges.save(edge);
                 return;
