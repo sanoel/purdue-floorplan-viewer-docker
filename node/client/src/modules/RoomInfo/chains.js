@@ -271,13 +271,26 @@ function postNewShare({props, state, http, path}) {
   let example = _.cloneDeep(editShare)
   delete example.persons
   delete example._key
-  return http.post('/nodes', example).then((meta) => {
+	return http.request({
+		method: 'POST',
+		url: '/nodes',
+		body: example,
+		headers: {
+			'Content-Type': 'application/json; charset=UTF-8',
+		}
+	}).then((meta) => {
     example = Object.assign(example, meta.result);
     example.persons = editShare.persons;
-    return http.post('/edges?_to='+meta.result._id+'&_from='+room._id+'&_type=room-share').then((results) => {
+		return http.request({
+			method: 'POST',
+			url: '/edges?_to='+meta.result._id+'&_from='+room._id+'&_type=room-share'
+		}).then((results) => {
 // Add persons that are new 
       return Promise.each(Object.keys(editShare.persons), (key) => { 
-        return http.post('/edges?_to='+encodeURIComponent('nodes/'+key)+'&_from='+encodeURIComponent(meta.result._id)+'&_type=share-person').then((res) => {
+				return http.request({
+					method: 'POST',
+					url: '/edges?_to='+encodeURIComponent('nodes/'+key)+'&_from='+encodeURIComponent(meta.result._id)+'&_type=share-person',
+				}).then((res) => {
           return path.success({share: example, tempKey})
         })
       })
@@ -300,12 +313,21 @@ function updateShare({props, state, http, path}) {
   delete example._id
   delete example._key
   console.log('PUTTING ROOM UPDATES', editShare._id, example)
-  return http.put('/nodes?id='+editShare._id, example).then((res) => {
+	return http.request({
+		method: 'PUT',
+		url: '/nodes?id='+editShare._id,
+		body: example,
+		headers: {
+			'Content-Type': 'application/json; charset=UTF-8',
+		}
+	}).then((res) => {
 // Add persons that are new 
     return Promise.each(Object.keys(editShare.persons), (key) => { 
       if (!share.persons[key]) {
-        return http.post('/edges?_to=nodes/'+key+'&_from='+editShare._id+'&_type=share-person')
-        .catch((err) => {
+				return http.request({
+					method: 'POST',
+					url: '/edges?_to=nodes/'+key+'&_from='+editShare._id+'&_type=share-person'
+				}).catch((err) => {
           console.log(err)
           return path.error({error:err})
         })
@@ -411,7 +433,14 @@ function setDeptAssigned({props, state}) {
 
 function updateRoom({props, state, path, http}) {
   var body = {example:{_id:props.room._id}, newValue:props.room}
-  return http.put('/update/', body).then((results) => {
+	return http.request({
+		method: 'PUT',
+		url: '/update/',
+		body,
+		headers: {
+			'Content-Type': 'application/json; charset=UTF-8',
+		}
+	}).then((results) => {
     return path.success()
   }).catch((error) =>{
     console.log(error);
@@ -519,7 +548,14 @@ function putNewPerson({props, state, path, http}) {
     _type: 'person',
   }
   person.fulltext = createFullText(person, searchablePersonAttributes)
-  return http.post('/nodes', person).then((results)=> {
+	return http.request({
+		method: 'POST',
+		url: '/nodes',
+		body: person,
+		headers: {
+			'Content-Type': 'application/json; charset=UTF-8',
+		}
+	}).then((results)=> {
     console.log(results)
     return path.success({person: Object.assign(results.result, person), to: results.result._id})
   }).catch((error) => {
@@ -555,8 +591,20 @@ function setRoomAttributes({props, state}) {
 }
 
 function putRoomAttributes({props, state, http, path}) {
-  let room = state.get('roominfo.room')
-  return http.put('/nodes?id='+room._id, {attributes: room.attributes}).then((results) => {
+	let room = state.get('roominfo.room')
+	console.log(room._id)
+	let body = {
+		attributes: room.attributes
+	}
+	return http.request({
+		method: 'PUT',
+		url: '/nodes?id='+room._id,
+		body,
+		headers: {
+			'Content-Type': 'application/json; charset=UTF-8',
+		}
+	}).then((results) => {
+		console.log(results)
     return path.success({})
   }).catch((error) => {
     console.log(error);

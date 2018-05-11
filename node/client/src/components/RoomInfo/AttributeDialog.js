@@ -40,7 +40,7 @@ class AttributeDialog extends React.Component {
         className={styles['share-dialog']}
         onRequestClose={this.handleRequestClose}>
         <div className={styles['checkbox-container']}>
-          {this.props.allttributes.map((attribute, i) => (
+          {this.props.all_attributes.map((attribute, i) => (
             <Checkbox
               key={'attribute-checkbox-'+i}
               onCheck={() => { this.props.attributeChanged({attribute})}}
