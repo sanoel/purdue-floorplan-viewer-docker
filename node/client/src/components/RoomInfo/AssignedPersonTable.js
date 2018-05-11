@@ -11,17 +11,8 @@ let cellStyle = {
 }
 
 export default connect({
-  editing: state`${props`prefix`}.editing`,
-  persons: state`${props`prefix`}.${props`fromType`}.${props`edgeType`}_persons`,
-  personsEditing: state`${props`prefix`}.${props`fromType`}_edits.${props`edgeType`}_persons`,
-  newPersonText: state`${props`prefix`}.${props`fromType`}_edits.new_person.text`,
-  matches: state`${props`prefix`}.${props`fromType`}_edits.new_person.matches`,
-  match: state`${props`prefix`}.${props`fromType`}_edits.selected_match`,
-  personPageRequested: signal`viewer.personPageRequested`,
-  addPersonButtonClicked: signal`persontable.addPersonButtonClicked`,
-  newPersonTextChanged: signal`persontable.newPersonTextChanged`,
-  removePersonButtonClicked: signal`persontable.removePersonButtonClicked`,
-  personMatchSelected: signal`persontable.personMatchSelected`,
+	keyholders: state`roominfo.room.keyholders`,
+	personPageRequested: signal`viewer.personPageRequested`,
 },
   class PersonTable extends React.Component {
 
@@ -29,7 +20,7 @@ export default connect({
       return (
         <Paper className={styles['table-container']}>
           <span className={styles['table-title']}>
-            People Assigned
+            Associated People
           </span>
         <Table 
           style={{width: 'auto'}} 
@@ -91,12 +82,12 @@ export default connect({
               stripedRows={true}
               displaySelectAll={false}
               displayRowCheckbox={false}>
-              {this.props.persons.map((person, index) => (
+              {Object.keys(this.props.keyholders || {}).map((key, index) => (
                 <TableRow 
                   key={index}
-                  onTouchTap={()=>{this.props.personPageRequested({person:person.name})}}>
+                  onTouchTap={()=>{this.props.personPageRequested({person:this.props.keyholders[key].name})}}>
                   <TableRowColumn style={cellStyle}>
-                    {person.name}
+                    {this.props.keyholders[key].name}
                   </TableRowColumn>
                 </TableRow>
               ))}

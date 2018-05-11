@@ -21,11 +21,17 @@ export let setRoomPage = [
       setRoomAttributes,
       getSharesFromRoom, {
         success: [
-          getPersonsFromShares, {
+          getPersonsFromRoom, {
             success: [
-              set(state`roominfo.room.shares`, props`shares`), 
-							filter, 
-              ...setFrontPage,
+							set(state`roominfo.room`, props`room`), 
+							getPersonsFromShares, {
+								success: [
+									set(state`roominfo.room.shares`, props`shares`), 
+									filter, 
+									...setFrontPage,
+								],
+								error: [],
+							},
             ],
             unauthorized: [...failedAuth],
           },
@@ -313,6 +319,24 @@ export function getSharesFromRoom({props, http, path}) {
       return path.unauthorized({})
     }
     return path.error({message:err})
+  })
+}
+
+export function getPersonsFromRoom({props, http, path}) {
+	let room = props.room;
+  return http.get('/edges?_type=person&_from='+room._id).then((results) => {
+		room.keyholders = {}
+		return Promise.each(results.result, (person, j) => {
+			return room.keyholders[person._key] = person;
+		})
+  }).catch((err) => {
+		console.log(err)
+		if (err.status === 401) {
+			return path.unauthorized({})
+		}
+		return path.error({message:err})
+  }).then(() => {
+    return path.success({room})
   })
 }
 
